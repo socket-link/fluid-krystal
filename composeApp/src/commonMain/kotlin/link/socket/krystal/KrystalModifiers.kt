@@ -1,69 +1,62 @@
 package link.socket.krystal
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.delay
+import link.socket.krystal.engine.ContentAnalysis
 
-/**
- * Custom modifier that applies Krystal visual effects.
- * This encapsulates the actual rendering logic for Krystal materials.
- * Think of this as the "Krystal shader" that creates the visual effect.
- */
-fun Modifier.krystalEffect(
-    alpha: Float = 0.8f,
-    shadowIntensity: Float = 0.5f,
-    tintColor: Color = Color.Transparent
-): Modifier = this.drawWithCache {
-    onDrawBehind {
-        // Basic Krystal effect implementation
-        // This is where we'd implement the sophisticated shader effects
+fun Modifier.krystalized(
+    style: KrystalStyle = KrystalStyle()
+): Modifier {
+    val shape = RoundedCornerShape(style.cornerRadius)
+    val brush = createGlassGradient(style)
 
-        // Background blur simulation (simplified for MVP)
-        drawRect(
-            color = Color.White.copy(alpha = alpha * 0.3f),
-            topLeft = Offset.Zero,
-            size = size
+    return this
+        .clip(shape)
+        .background(
+            brush = brush,
+            shape = shape
         )
-
-        // Subtle tint based on background content
-        if (tintColor != Color.Transparent) {
-            drawRect(
-                color = tintColor.copy(alpha = 0.1f),
-                topLeft = Offset.Zero,
-                size = size
-            )
-        }
-
-        // Shadow effect (intensity based on content contrast)
-        drawRect(
-            color = Color.Black.copy(alpha = shadowIntensity * 0.2f),
-            topLeft = Offset(0f, 2.dp.toPx()),
-            size = Size(size.width, size.height - 2.dp.toPx())
+        .border(
+            width = 1.dp,
+            color = style.tintColor.copy(alpha = style.borderOpacity),
+            shape = shape
         )
-    }
 }
 
-/**
- * Simple modifier that enables glass components to automatically analyze
- * their background without manual content registration.
- */
+private fun createGlassGradient(style: KrystalStyle): Brush {
+    val baseColor = style.tintColor.copy(alpha = style.backgroundOpacity)
+
+    val reflectionLayer = style.tintColor.copy(alpha = 0.1f)
+    val refractionLayer = style.tintColor.copy(alpha = 0.05f)
+
+    return Brush.verticalGradient(
+        colors = listOf(
+            reflectionLayer,
+            baseColor,
+            refractionLayer,
+            baseColor.copy(alpha = style.backgroundOpacity * 0.5f)
+        )
+    )
+}
+
 fun Modifier.autoAnalyzeBackground(
     onContentAnalyzed: (ContentAnalysis) -> Unit
 ): Modifier = composed(
@@ -75,7 +68,6 @@ fun Modifier.autoAnalyzeBackground(
     var lastBounds by remember { mutableStateOf<Rect?>(null) }
     var lastAnalysis by remember { mutableStateOf(ContentAnalysis()) }
 
-    // Set up a LaunchedEffect to periodically check for updates
     LaunchedEffect(Unit) {
         while(true) {
             lastBounds?.let { bounds ->
@@ -85,7 +77,7 @@ fun Modifier.autoAnalyzeBackground(
                     onContentAnalyzed(currentAnalysis)
                 }
             }
-            delay(100) // Check every 100ms
+            delay(100)
         }
     }
 
@@ -96,7 +88,6 @@ fun Modifier.autoAnalyzeBackground(
         )
         lastBounds = bounds
 
-        // Initial analysis
         val analysis = captureEngine.analyzeRegion(bounds)
         if (analysis != lastAnalysis) {
             lastAnalysis = analysis
@@ -105,11 +96,8 @@ fun Modifier.autoAnalyzeBackground(
     }
 }
 
-/**
- * Performance-optimized analysis with debouncing for smooth interactions.
- */
 @Composable
-fun rememberDebouncedMultiplatformAnalysis(
+fun rememberDebouncedContentAnalysis(
     analysis: ContentAnalysis,
     delayMillis: Long = 16L
 ): ContentAnalysis {

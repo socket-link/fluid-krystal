@@ -1,26 +1,19 @@
-@file:OptIn(ExperimentalComposeUiApi::class)
+@file:OptIn(ExperimentalComposeUiApi::class, ExperimentalTime::class)
 
-package link.socket.krystal
+package link.socket.krystal.engine
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.SemanticsPropertyKey
 import kotlin.collections.emptyMap
 import kotlin.collections.plus
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-/**
- * Advanced content capture engine that uses multiple sources of information
- * to intelligently understand UI content structure and types.
- */
 class KrystalContentCaptureEngine {
 
     private var _discoveredContent: Map<String, DiscoveredContentRegion> by mutableStateOf(emptyMap())
@@ -51,8 +44,7 @@ class KrystalContentCaptureEngine {
         
         println("🔍 Discovered ${discovered.size} content regions")
 
-        val hasSignificantChange = discovered.size != _discoveredContent.size || 
-                              discovered.keys != _discoveredContent.keys
+        val hasSignificantChange = discovered.size != _discoveredContent.size || discovered.keys != _discoveredContent.keys
     
         if (hasSignificantChange) {
             println("🔍 Updating discoveredContent from ${_discoveredContent.size} to ${discovered.size} regions")
@@ -65,7 +57,6 @@ class KrystalContentCaptureEngine {
         }
     }
 
-    @OptIn(ExperimentalTime::class)
     fun analyzeRegion(region: Rect): ContentAnalysis {
         val cacheKey = region
         _analysisCache[cacheKey]?.let { (analysis, _) -> 
@@ -118,7 +109,6 @@ class KrystalContentCaptureEngine {
             parentNode = null
         )
 
-        // Build nodes with enhanced content type inference
         val nodeMap = mutableMapOf<Rect, ContentHierarchyNode>()
         nodeMap[containerBounds] = rootNode
 
@@ -137,7 +127,6 @@ class KrystalContentCaptureEngine {
             addToAdvancedHierarchy(rootNode, node, info.parentBounds, nodeMap)
         }
 
-        // Set parent references and calculate hierarchy levels
         setParentReferencesAndLevels(rootNode)
 
         return rootNode
@@ -147,7 +136,6 @@ class KrystalContentCaptureEngine {
         layoutInfo: EnhancedLayoutInfo,
         allLayoutInfo: List<EnhancedLayoutInfo>
     ): ContentType {
-        // 1. Check semantic information first (highest priority)
         layoutInfo.semanticInfo?.let { semantics ->
             semantics.textContent?.let { return ContentType.TEXT }
             if (semantics.isButton) return ContentType.BUTTON
@@ -157,7 +145,6 @@ class KrystalContentCaptureEngine {
             if (semantics.isContainer) return ContentType.CONTAINER
         }
 
-        // 2. Check composable type information
         layoutInfo.composableType?.let { type ->
             return when {
                 type.contains("Text", ignoreCase = true) || 
@@ -178,7 +165,6 @@ class KrystalContentCaptureEngine {
             }
         }
 
-        // 3. Check modifier chain for hints
         layoutInfo.modifierChain.forEach { modifier ->
             when {
                 modifier.contains("clickable") -> return ContentType.INTERACTIVE_ELEMENT
@@ -188,7 +174,6 @@ class KrystalContentCaptureEngine {
             }
         }
 
-        // 4. Check interaction history
         _interactionHistory[layoutInfo.bounds]?.let { interaction ->
             return when (interaction) {
                 InteractionType.CLICK -> ContentType.INTERACTIVE_ELEMENT
@@ -199,21 +184,17 @@ class KrystalContentCaptureEngine {
             }
         }
 
-        // 5. Analyze drawing operations
         _drawingOperationsHistory[layoutInfo.bounds]?.let { operations ->
             val inferredType = inferContentTypeFromDrawingOps(operations)
             if (inferredType != ContentType.UNKNOWN) return inferredType
         }
 
-        // 6. Use layout pattern recognition
         val patternType = inferFromLayoutPatterns(layoutInfo, allLayoutInfo)
         if (patternType != ContentType.UNKNOWN) return patternType
 
-        // 7. Use parent-child context analysis
         val contextType = inferFromContext(layoutInfo, allLayoutInfo)
         if (contextType != ContentType.UNKNOWN) return contextType
 
-        // 8. Fall back to geometric heuristics (last resort)
         return inferFromGeometricHeuristics(layoutInfo)
     }
 
@@ -241,31 +222,23 @@ class KrystalContentCaptureEngine {
         val parentWidth = layoutInfo.parentBounds?.width ?: layoutInfo.bounds.width
 
         return when {
-            // Navigation bars (wide and thin, spans most width)
-            aspectRatio > 8f && layoutInfo.bounds.height < 80 && 
+            aspectRatio > 8f && layoutInfo.bounds.height < 80 &&
             layoutInfo.bounds.width > parentWidth * 0.9f -> ContentType.NAVIGATION
 
-            // App bars / toolbars
             aspectRatio > 4f && layoutInfo.bounds.height in 40f..120f &&
             layoutInfo.bounds.width > parentWidth * 0.8f -> ContentType.APP_BAR
 
-            // Cards (moderate size, reasonable aspect ratio)
             aspectRatio in 0.6f..2f && area > 15000 && area < 200000 -> ContentType.CARD
 
-            // List items (wide, moderate height, multiple similar items)
             aspectRatio > 2f && layoutInfo.bounds.height in 60f..200f &&
             hasSimilarSiblings(layoutInfo, allLayoutInfo) -> ContentType.LIST_ITEM
 
-            // Buttons (specific size range and aspect ratios)
             aspectRatio in 1.5f..5f && area in 3000f..25000f -> ContentType.BUTTON
 
-            // Text blocks (wide, varying height, not too tall)
             aspectRatio > 2f && layoutInfo.bounds.height < 300 && area > 2000 -> ContentType.TEXT
 
-            // Floating action buttons (small, square-ish)
             aspectRatio in 0.8f..1.25f && area in 2000f..8000f -> ContentType.FAB
 
-            // Bottom sheets (wide, positioned at bottom)
             aspectRatio > 3f && isPositionedAtBottom(layoutInfo, parentWidth) -> ContentType.BOTTOM_SHEET
 
             else -> ContentType.UNKNOWN
@@ -276,13 +249,11 @@ class KrystalContentCaptureEngine {
         layoutInfo: EnhancedLayoutInfo,
         allLayoutInfo: List<EnhancedLayoutInfo>
     ): ContentType {
-        // Find parent info
         val parentInfo = allLayoutInfo.find { it.bounds == layoutInfo.parentBounds }
         val childrenInfo = allLayoutInfo.filter { it.parentBounds == layoutInfo.bounds }
 
         parentInfo?.let { parent ->
-            // Analyze based on parent's probable type
-            val parentType = if (parent.bounds == layoutInfo.bounds) ContentType.UNKNOWN 
+            val parentType = if (parent.bounds == layoutInfo.bounds) ContentType.UNKNOWN
                             else inferAdvancedContentType(parent, allLayoutInfo)
 
             when (parentType) {
@@ -290,15 +261,13 @@ class KrystalContentCaptureEngine {
                 ContentType.NAVIGATION -> return ContentType.NAV_ITEM
                 ContentType.APP_BAR -> return ContentType.TOOLBAR_ITEM
                 ContentType.CARD -> {
-                    // Small elements in cards are likely text or buttons
                     val area = layoutInfo.bounds.width * layoutInfo.bounds.height
                     return if (area < 5000) ContentType.TEXT else ContentType.CONTENT_AREA
                 }
-                else -> { /* continue analysis */ }
+                else -> { /* TODO: Continue analysis */ }
             }
         }
 
-        // Analyze children to infer container type
         if (childrenInfo.isNotEmpty()) {
             val childTypes = childrenInfo.map { child ->
                 if (child.bounds == layoutInfo.bounds) ContentType.UNKNOWN
@@ -312,7 +281,7 @@ class KrystalContentCaptureEngine {
                     return ContentType.IMAGE_GALLERY
                 childTypes.count { it == ContentType.LIST_ITEM } > 2 -> 
                     return ContentType.LIST
-                else -> { /* continue analysis */ }
+                else -> { /* TODO: Continue analysis */ }
             }
         }
 
@@ -324,19 +293,14 @@ class KrystalContentCaptureEngine {
         val area = layoutInfo.bounds.width * layoutInfo.bounds.height
 
         return when {
-            // Very small elements
             area < 1000 -> ContentType.DECORATION
 
-            // Text-like proportions
             aspectRatio > 2f && layoutInfo.bounds.height < 100 -> ContentType.TEXT
 
-            // Square or near-square, medium size
             aspectRatio in 0.7f..1.4f && area in 5000f..50000f -> ContentType.IMAGE
 
-            // Large background elements
             area > 100000 -> ContentType.BACKGROUND
 
-            // Default to shape for other cases
             else -> ContentType.SHAPE
         }
     }
@@ -351,7 +315,6 @@ class KrystalContentCaptureEngine {
 
         if (siblings.size < 2) return false
 
-        // Check if there are multiple items with similar dimensions
         val similarSiblings = siblings.count { sibling ->
             val widthRatio = sibling.bounds.width / layoutInfo.bounds.width
             val heightRatio = sibling.bounds.height / layoutInfo.bounds.height
@@ -373,7 +336,6 @@ class KrystalContentCaptureEngine {
         val isTransparent = inferredColor.alpha < 1f
         val hasGradient = layoutInfo.drawingHints.hasComplexBackground
 
-        // Enhanced property detection
         val hasElevation = layoutInfo.modifierChain.any { it.contains("shadow") || it.contains("elevation") }
         val isAnimated = layoutInfo.modifierChain.any { it.contains("animat") }
         val hasRipple = layoutInfo.modifierChain.any { it.contains("ripple") }
@@ -430,7 +392,6 @@ class KrystalContentCaptureEngine {
         return regions
     }
 
-    @OptIn(ExperimentalTime::class)
     private fun extractRegionsRecursive(
         node: ContentHierarchyNode,
         regions: MutableMap<String, DiscoveredContentRegion>
@@ -455,10 +416,8 @@ class KrystalContentCaptureEngine {
     private fun calculateContentTypeConfidence(node: ContentHierarchyNode): Float {
         var confidence = 0.5f
 
-        // Higher confidence if we have semantic information
         if (node.semanticInfo != null) confidence += 0.3f
 
-        // Higher confidence for well-known content types
         when (node.contentType) {
             ContentType.TEXT, ContentType.IMAGE, ContentType.BUTTON -> confidence += 0.2f
             ContentType.CONTAINER, ContentType.BACKGROUND -> confidence += 0.1f
@@ -578,150 +537,3 @@ class KrystalContentCaptureEngine {
         }
     }
 }
-
-// Enhanced data classes with additional information
-
-data class EnhancedLayoutInfo(
-    val bounds: Rect,
-    val parentBounds: Rect?,
-    val drawingHints: DrawingHints,
-    val composableType: String? = null,
-    val modifierChain: List<String> = emptyList(),
-    val semanticInfo: SemanticInfo? = null
-)
-
-data class SemanticInfo(
-    val textContent: String? = null,
-    val isButton: Boolean = false,
-    val isClickable: Boolean = false,
-    val isImage: Boolean = false,
-    val isTextField: Boolean = false,
-    val isContainer: Boolean = false,
-    val accessibilityLabel: String? = null,
-    val role: String? = null
-)
-
-data class DiscoveredContentRegion(
-    val bounds: Rect,
-    val contentType: ContentType,
-    val visualProperties: VisualProperties,
-    val hierarchyLevel: Int,
-    val lastDiscovered: Long,
-    val semanticInfo: SemanticInfo? = null,
-    val confidence: Float = 0.5f
-)
-
-data class ContentHierarchyNode(
-    val bounds: Rect,
-    val contentType: ContentType,
-    val visualProperties: VisualProperties,
-    val children: MutableList<ContentHierarchyNode>,
-    val semanticInfo: SemanticInfo? = null,
-    var parentNode: ContentHierarchyNode? = null,
-    var hierarchyLevel: Int = 0
-)
-
-data class DrawingHints(
-    val backgroundColor: Color? = null,
-    val hasComplexBackground: Boolean = false,
-    val isTextContent: Boolean = false,
-    val hasElevation: Boolean = false,
-    val isAnimated: Boolean = false
-)
-
-enum class ContentType {
-    // Basic content types
-    TEXT,
-    IMAGE,
-    BACKGROUND,
-    CONTAINER,
-    SHAPE,
-    UNKNOWN,
-    
-    // Interactive elements
-    BUTTON,
-    INTERACTIVE_ELEMENT,
-    TEXT_INPUT,
-    
-    // Layout components
-    CARD,
-    SURFACE,
-    LIST,
-    LIST_ITEM,
-    NAVIGATION,
-    APP_BAR,
-    TOOLBAR_ITEM,
-    NAV_ITEM,
-    FAB,
-    BOTTOM_SHEET,
-    
-    // Content areas
-    TEXT_CONTAINER,
-    IMAGE_GALLERY,
-    CONTENT_AREA,
-    SCROLLABLE_CONTENT,
-    DRAGGABLE_CONTENT,
-    ZOOMABLE_CONTENT,
-    
-    // Decorative elements
-    DECORATION
-}
-
-data class VisualProperties(
-    val primaryColor: Color = Color.Gray,
-    val brightness: Float = 0.5f,
-    val hasGradient: Boolean = false,
-    val isTransparent: Boolean = false,
-    val hasElevation: Boolean = false,
-    val isAnimated: Boolean = false,
-    val hasRipple: Boolean = false
-)
-
-enum class InteractionType {
-    CLICK,
-    SCROLL,
-    TEXT_INPUT,
-    DRAG,
-    PINCH
-}
-
-data class DrawingOperation @OptIn(ExperimentalTime::class) constructor(
-    val type: DrawingType,
-    val bounds: Rect,
-    val color: Color,
-    val timestamp: Long = Clock.System.now().toEpochMilliseconds(),
-)
-
-enum class DrawingType {
-    BACKGROUND,
-    TEXT,
-    SHAPE,
-    IMAGE
-}
-
-data class ContentAnalysis(
-    val brightness: Float = 0.5f,
-    val dominantColor: Color = Color.Gray,
-    val contrastLevel: Float = 0.5f,
-    val isDarkContent: Boolean = false,
-    val hasHighContrast: Boolean = false,
-    val colorTemperature: Float = 0.5f,
-    val hasTextContent: Boolean = false,
-    val hasImageContent: Boolean = false,
-    val hasInteractiveContent: Boolean = false,
-    val hasAnimatedContent: Boolean = false
-)
-
-// Legacy data classes for compatibility
-data class MeasuredLayoutInfo(
-    val bounds: Rect,
-    val parentBounds: Rect?,
-    val drawingHints: DrawingHints
-)
-
-data class ContentRegionInfo(
-    val bounds: Rect,
-    val contentType: ContentType,
-    val visualProperties: VisualProperties,
-    val lastUpdated: Long
-)
