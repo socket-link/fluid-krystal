@@ -5,14 +5,22 @@ import androidx.compose.ui.graphics.Color
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-data class EnhancedLayoutInfo(
+data class ContentInfo(
     val bounds: Rect,
     val parentBounds: Rect?,
     val drawingHints: DrawingHints,
     val composableType: String? = null,
     val modifierChain: List<String> = emptyList(),
     val semanticInfo: SemanticInfo? = null
-)
+) {
+    companion object {
+        val EMPTY = ContentInfo(
+            bounds = Rect.Zero,
+            parentBounds = null,
+            drawingHints = DrawingHints(),
+        )
+    }
+}
 
 data class SemanticInfo(
     val textContent: String? = null,

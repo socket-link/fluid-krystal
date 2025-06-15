@@ -1,64 +1,89 @@
+@file:OptIn(ExperimentalTime::class)
+
 package link.socket.krystal
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.requiredHeight
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithCache
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import link.socket.krystal.engine.DrawingHints
-import link.socket.krystal.engine.EnhancedLayoutInfo
-import link.socket.krystal.engine.KrystalContentCaptureEngine
+import link.socket.krystal.engine.ContentInfo
+import link.socket.krystal.engine.KrystalContainerContext
+import link.socket.krystal.engine.KrystalSurfaceContext
+import link.socket.krystal.engine.LocalKrystalContainerContext
+import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+private val baseKrystalStyle = KrystalStyle()
+
 @Composable
 fun KrystalContainer(
+    scrollState: ScrollState,
     modifier: Modifier = Modifier,
-    scrollState: androidx.compose.foundation.ScrollState? = null,
-    foregroundContent: @Composable BoxScope.() -> Unit,
+    baseStyle: KrystalStyle = baseKrystalStyle,
     backgroundContent: @Composable BoxScope.() -> Unit,
+    foregroundContent: @Composable BoxScope.() -> Unit,
 ) {
-    val contentCaptureEngine = remember { KrystalContentCaptureEngine() }
-
-    val layoutInfoChannel = remember { Channel<EnhancedLayoutInfo>(Channel.UNLIMITED) }
-
     var containerBounds by remember { mutableStateOf(Rect.Zero) }
     var lastProcessedTime by remember { mutableStateOf(0L) }
     var lastScrollValue by remember { mutableStateOf(0) }
 
-    val krystalContext = remember(containerBounds) {
-        KrystalContext(containerBounds, contentCaptureEngine)
+    val scope = rememberCoroutineScope()
+    val backgroundHazeState = rememberHazeState()
+
+    val krystalContainerContextStream = remember(backgroundHazeState, baseStyle) {
+        mutableStateOf(
+            KrystalContainerContext.newInstance(
+                scope = scope,
+                baseHazeState = backgroundHazeState,
+                baseKrystalStyle = baseStyle,
+            )
+        )
     }
 
-    LaunchedEffect(scrollState?.value) {
-        val currentScrollValue = scrollState?.value ?: 0
+    val layoutInfoChannel = remember { Channel<ContentInfo>(Channel.UNLIMITED) }
+
+    LaunchedEffect(backgroundHazeState) {
+        krystalContainerContextStream.value = krystalContainerContextStream.value.copy(
+            baseHazeState = backgroundHazeState,
+        )
+    }
+
+    LaunchedEffect(scrollState.value) {
+        val currentScrollValue = scrollState.value
         if (currentScrollValue != lastScrollValue) {
             println("🔄 Scroll detected: $lastScrollValue -> $currentScrollValue")
             lastScrollValue = currentScrollValue
 
-            contentCaptureEngine.forceContentUpdate()
-            KrystalDebugRegistry.forceUpdate()
+            krystalContainerContextStream.value.contentCaptureEngine.forceContentUpdate()
+            KrystalDebug.forceUpdate()
         }
     }
 
     LaunchedEffect(Unit) {
-        val collectedInfo = mutableListOf<EnhancedLayoutInfo>()
+        val collectedInfo = mutableListOf<ContentInfo>()
         while (true) {
             var item = layoutInfoChannel.tryReceive().getOrNull()
             while (item != null) {
@@ -73,7 +98,10 @@ fun KrystalContainer(
 
             if (hasEnoughInfo && hasValidBounds && enoughTimeHasPassed) {
                 println("🔄 Processing ${collectedInfo.size} layout items")
-                contentCaptureEngine.discoverContent(containerBounds, collectedInfo.toList())
+                krystalContainerContextStream.value.contentCaptureEngine.discoverContent(
+                    containerBounds,
+                    collectedInfo.toList(),
+                )
                 collectedInfo.clear()
                 lastProcessedTime = currentTime
             }
@@ -81,19 +109,17 @@ fun KrystalContainer(
         }
     }
 
-    var backgroundBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
-
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
             if (containerBounds != Rect.Zero) {
-                contentCaptureEngine.forceContentUpdate()
-                KrystalDebugRegistry.forceUpdate()
+                krystalContainerContextStream.value.contentCaptureEngine.forceContentUpdate()
+                KrystalDebug.forceUpdate()
             }
         }
     }
 
-    CompositionLocalProvider(LocalKrystalContext provides krystalContext) {
+    CompositionLocalProvider(LocalKrystalContainerContext provides krystalContainerContextStream.value) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -105,13 +131,13 @@ fun KrystalContainer(
                     )
                     
                     val centerDistance = (newBounds.center - containerBounds.center).getDistance()
-                    val sizeChanged = kotlin.math.abs(newBounds.width - containerBounds.width) + 
-                                     kotlin.math.abs(newBounds.height - containerBounds.height)
+                    val sizeChanged = abs(newBounds.width - containerBounds.width) +
+                                     abs(newBounds.height - containerBounds.height)
                     
                     if (centerDistance > 0.5f || sizeChanged > 1.0f) {
                         containerBounds = newBounds
                         println("📏 Container bounds updated: $newBounds")
-                        KrystalDebugRegistry.forceUpdate()
+                        KrystalDebug.forceUpdate()
                     }
 
                     val scrollOffset = scrollState?.value ?: 0
@@ -124,7 +150,7 @@ fun KrystalContainer(
                         size = coordinates.size.toSize()
                     )
                     
-                    val layoutInfo = EnhancedLayoutInfo(
+                    val layoutInfo = ContentInfo(
                         bounds = adjustedBounds,
                         parentBounds = null,
                         drawingHints = DrawingHints(
@@ -137,18 +163,19 @@ fun KrystalContainer(
                 }
                 .drawingListener { operations ->
                     if (operations.isNotEmpty()) {
-                        contentCaptureEngine.processDrawingOperations(containerBounds, operations)
+                        krystalContainerContextStream.value.contentCaptureEngine.processDrawingOperations(
+                            containerBounds,
+                            operations,
+                        )
                     }
                 },
             content = {
+                val hazeState = LocalKrystalContainerContext.current.baseHazeState
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .drawWithCache {
-                            val bitmap = ImageBitmap(size.width.toInt(), size.height.toInt())
-                            backgroundBitmap = bitmap
-                            onDrawBehind { /* TODO: Drawing code */ }
-                        }
+                        .hazeSource(hazeState)
                 ) {
                     backgroundContent()
                 }
@@ -156,16 +183,15 @@ fun KrystalContainer(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .drawWithContent {
-                            backgroundBitmap?.let { bitmap ->
-                                // TODO: Re-enable blur
-                                // val blurredBitmap = bitmap.applyGaussianBlur(8f)
-                                drawImage(backgroundBitmap as ImageBitmap)
-                            }
-                            drawContent()
-                        }
                 ) {
-                    foregroundContent()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .requiredHeight(128.dp)
+                            .krystalizedContainer(LocalKrystalContainerContext.current)
+                    ) {
+                        foregroundContent()
+                    }
                 }
             }
         )

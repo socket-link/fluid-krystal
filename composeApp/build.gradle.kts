@@ -57,6 +57,7 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.androidx.lifecycle.viewmodel)
             implementation(libs.androidx.lifecycle.runtimeCompose)
+            implementation(libs.haze)
             implementation(projects.shared)
         }
         commonTest.dependencies {

@@ -1,6 +1,6 @@
 package link.socket.krystal
 
-import androidx.compose.foundation.background
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -14,47 +14,66 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.debugInspectorInfo
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.delay
 import link.socket.krystal.engine.ContentAnalysis
+import link.socket.krystal.engine.KrystalContainerContext
+import link.socket.krystal.engine.KrystalSurfaceContext
+import link.socket.krystal.engine.LocalKrystalContainerContext
 
-fun Modifier.krystalized(
-    style: KrystalStyle = KrystalStyle()
-): Modifier {
-    val shape = RoundedCornerShape(style.cornerRadius)
-    val brush = createGlassGradient(style)
+fun Modifier.krystalizedContainer(
+    context: KrystalContainerContext,
+): Modifier = composed(
+    inspectorInfo = debugInspectorInfo {
+        name = "krystalizedSurface"
+        properties["context"] = context
+    }
+) {
+    val hazeState = context.baseHazeState
 
-    return this
-        .clip(shape)
-        .background(
-            brush = brush,
-            shape = shape
+    this.hazeEffect(
+        state = hazeState,
+        style = context.baseKrystalStyle.hazeStyle,
+    ) {
+        progressive = HazeProgressive.horizontalGradient(
+            easing = FastOutSlowInEasing,
+            startIntensity = 1f,
+            endIntensity = .25f,
         )
-        .border(
-            width = 1.dp,
-            color = style.tintColor.copy(alpha = style.borderOpacity),
-            shape = shape
-        )
+    }
 }
 
-private fun createGlassGradient(style: KrystalStyle): Brush {
-    val baseColor = style.tintColor.copy(alpha = style.backgroundOpacity)
+fun Modifier.krystalizedSurface(
+    context: KrystalSurfaceContext,
+): Modifier = composed(
+    inspectorInfo = debugInspectorInfo {
+        name = "krystalizedSurface"
+        properties["context"] = context
+    }
+) {
+    val shape = RoundedCornerShape(context.surfaceStyle.cornerRadius)
+    val hazeState = context.surfaceHazeState
 
-    val reflectionLayer = style.tintColor.copy(alpha = 0.1f)
-    val refractionLayer = style.tintColor.copy(alpha = 0.05f)
-
-    return Brush.verticalGradient(
-        colors = listOf(
-            reflectionLayer,
-            baseColor,
-            refractionLayer,
-            baseColor.copy(alpha = style.backgroundOpacity * 0.5f)
+    this.clip(shape)
+        .hazeEffect(
+            state = hazeState,
+            style = context.surfaceStyle.hazeStyle,
+        ) {
+            progressive = HazeProgressive.horizontalGradient(
+                easing = FastOutSlowInEasing,
+                startIntensity = 1f,
+                endIntensity = .25f,
+            )
+        }
+        .border(
+            width = context.surfaceStyle.borderThickness,
+            color = context.surfaceStyle.borderColor,
+            shape = shape
         )
-    )
 }
 
 fun Modifier.autoAnalyzeBackground(
@@ -64,12 +83,12 @@ fun Modifier.autoAnalyzeBackground(
         name = "autoAnalyzeBackground"
     }
 ) {
-    val captureEngine = LocalKrystalContext.current.contentCaptureEngine
+    val captureEngine = LocalKrystalContainerContext.current.contentCaptureEngine
     var lastBounds by remember { mutableStateOf<Rect?>(null) }
     var lastAnalysis by remember { mutableStateOf(ContentAnalysis()) }
 
     LaunchedEffect(Unit) {
-        while(true) {
+        while (true) {
             lastBounds?.let { bounds ->
                 val currentAnalysis = captureEngine.analyzeRegion(bounds)
                 if (currentAnalysis != lastAnalysis) {

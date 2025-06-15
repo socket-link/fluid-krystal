@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,7 @@ import androidx.compose.ui.window.Window
 import kotlinx.coroutines.delay
 import link.socket.krystal.engine.ContentAnalysis
 import link.socket.krystal.engine.KrystalContentCaptureEngine
+import link.socket.krystal.engine.LocalKrystalContainerContext
 import java.util.Locale
 
 @Composable
@@ -88,10 +90,10 @@ fun KrystalDebugWindow(onClose: () -> Unit) {
 
 @Composable
 private fun KrystalButtonsDebugContent() {
-    val updateTrigger by KrystalDebugRegistry.updateTrigger
+    val updateTrigger by KrystalDebug.updateTrigger
 
-    val buttonContexts = remember(updateTrigger) {
-        val contexts = KrystalDebugRegistry.getAllButtonContexts()
+    val buttonBounds= remember(updateTrigger) {
+        val contexts = KrystalDebug.getAllButtonBounds()
         println("🐛 Retrieved ${contexts.size} button contexts (trigger: $updateTrigger)")
         contexts
     }
@@ -99,34 +101,30 @@ private fun KrystalButtonsDebugContent() {
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
-            KrystalDebugRegistry.forceUpdate()
+            KrystalDebug.forceUpdate()
         }
     }
 
-    val allEngineTriggers = buttonContexts.values.map { it.contentCaptureEngine.debugUpdateTrigger }
-    val combinedTrigger = remember(updateTrigger, allEngineTriggers) {
-        updateTrigger + allEngineTriggers.sum()
-    }
-
-    println("🐛 Debug content recomposing with combined trigger: $combinedTrigger")
-
-    if (buttonContexts.isEmpty()) {
+    if (buttonBounds.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No KrystalButton instances detected")
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(buttonContexts.entries.toList()) { (id, context) ->
-                KrystalButtonDebugItem(id, context, combinedTrigger)
+            items(buttonBounds.entries.toList()) { (id, bounds) ->
+                KrystalButtonDebugItem(id, bounds, updateTrigger)
             }
         }
     }
 }
 
 @Composable
-private fun KrystalButtonDebugItem(id: String, context: KrystalContext, refreshTrigger: Int) {
+private fun KrystalButtonDebugItem(
+    id: String,
+    bounds: Rect,
+    refreshTrigger: Int
+) {
     var expanded by remember { mutableStateOf(false) }
-    val engine = context.contentCaptureEngine
 
     Column(
         modifier = Modifier
@@ -158,14 +156,10 @@ private fun KrystalButtonDebugItem(id: String, context: KrystalContext, refreshT
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        Text("Bounds: ${context.bounds}", style = MaterialTheme.typography.bodySmall)
+        Text("Bounds: $bounds", style = MaterialTheme.typography.bodySmall)
 
-        val analysis = remember(context.bounds, refreshTrigger) {
-            if (engine.discoveredContent.isNotEmpty()) {
-                engine.analyzeRegion(context.bounds)
-            } else {
-                ContentAnalysis()
-            }
+        val analysis = remember(bounds, refreshTrigger) {
+            ContentAnalysis()
         }
 
         Row(
@@ -202,10 +196,10 @@ private fun KrystalButtonDebugItem(id: String, context: KrystalContext, refreshT
 
 @Composable
 private fun ContentCaptureDebugContent() {
-    val updateTrigger by KrystalDebugRegistry.updateTrigger
+    val updateTrigger by KrystalDebug.updateTrigger
 
     val contexts = remember(updateTrigger) {
-        KrystalDebugRegistry.getAllButtonContexts()
+        KrystalDebug.getAllButtonBounds()
     }
 
     if (contexts.isEmpty()) {
@@ -215,8 +209,8 @@ private fun ContentCaptureDebugContent() {
         return
     }
 
-    val engine = contexts.values.first().contentCaptureEngine
-
+    val krystalContext = LocalKrystalContainerContext.current
+    val engine = krystalContext.contentCaptureEngine
     val engineTrigger = engine.debugUpdateTrigger
 
     println("🐛 ContentCapture recomposing with engine trigger: $engineTrigger")

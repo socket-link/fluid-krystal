@@ -33,7 +33,7 @@ class KrystalContentCaptureEngine {
 
     fun discoverContent(
         rootBounds: Rect,
-        layoutInfo: List<EnhancedLayoutInfo>
+        layoutInfo: List<ContentInfo>
     ) {
         println("🔍 discoverContent called with ${layoutInfo.size} layout items")
         
@@ -97,7 +97,7 @@ class KrystalContentCaptureEngine {
     }
 
     private fun buildAdvancedContentHierarchy(
-        layoutInfo: List<EnhancedLayoutInfo>,
+        layoutInfo: List<ContentInfo>,
         containerBounds: Rect
     ): ContentHierarchyNode {
         val rootNode = ContentHierarchyNode(
@@ -133,8 +133,8 @@ class KrystalContentCaptureEngine {
     }
 
     private fun inferAdvancedContentType(
-        layoutInfo: EnhancedLayoutInfo,
-        allLayoutInfo: List<EnhancedLayoutInfo>
+        layoutInfo: ContentInfo,
+        allLayoutInfo: List<ContentInfo>
     ): ContentType {
         layoutInfo.semanticInfo?.let { semantics ->
             semantics.textContent?.let { return ContentType.TEXT }
@@ -214,8 +214,8 @@ class KrystalContentCaptureEngine {
     }
 
     private fun inferFromLayoutPatterns(
-        layoutInfo: EnhancedLayoutInfo,
-        allLayoutInfo: List<EnhancedLayoutInfo>
+        layoutInfo: ContentInfo,
+        allLayoutInfo: List<ContentInfo>
     ): ContentType {
         val aspectRatio = layoutInfo.bounds.width / layoutInfo.bounds.height
         val area = layoutInfo.bounds.width * layoutInfo.bounds.height
@@ -246,8 +246,8 @@ class KrystalContentCaptureEngine {
     }
 
     private fun inferFromContext(
-        layoutInfo: EnhancedLayoutInfo,
-        allLayoutInfo: List<EnhancedLayoutInfo>
+        layoutInfo: ContentInfo,
+        allLayoutInfo: List<ContentInfo>
     ): ContentType {
         val parentInfo = allLayoutInfo.find { it.bounds == layoutInfo.parentBounds }
         val childrenInfo = allLayoutInfo.filter { it.parentBounds == layoutInfo.bounds }
@@ -288,7 +288,7 @@ class KrystalContentCaptureEngine {
         return ContentType.UNKNOWN
     }
 
-    private fun inferFromGeometricHeuristics(layoutInfo: EnhancedLayoutInfo): ContentType {
+    private fun inferFromGeometricHeuristics(layoutInfo: ContentInfo): ContentType {
         val aspectRatio = layoutInfo.bounds.width / layoutInfo.bounds.height
         val area = layoutInfo.bounds.width * layoutInfo.bounds.height
 
@@ -306,8 +306,8 @@ class KrystalContentCaptureEngine {
     }
 
     private fun hasSimilarSiblings(
-        layoutInfo: EnhancedLayoutInfo,
-        allLayoutInfo: List<EnhancedLayoutInfo>
+        layoutInfo: ContentInfo,
+        allLayoutInfo: List<ContentInfo>
     ): Boolean {
         val siblings = allLayoutInfo.filter { 
             it.parentBounds == layoutInfo.parentBounds && it.bounds != layoutInfo.bounds 
@@ -324,13 +324,13 @@ class KrystalContentCaptureEngine {
         return similarSiblings >= 2
     }
 
-    private fun isPositionedAtBottom(layoutInfo: EnhancedLayoutInfo, parentWidth: Float): Boolean {
+    private fun isPositionedAtBottom(layoutInfo: ContentInfo, parentWidth: Float): Boolean {
         val parentHeight = layoutInfo.parentBounds?.height ?: return false
         val relativeY = layoutInfo.bounds.top / parentHeight
         return relativeY > 0.7f
     }
 
-    private fun inferEnhancedVisualProperties(layoutInfo: EnhancedLayoutInfo): VisualProperties {
+    private fun inferEnhancedVisualProperties(layoutInfo: ContentInfo): VisualProperties {
         val inferredColor = layoutInfo.drawingHints.backgroundColor ?: Color.Gray
         val brightness = inferredColor.luminance()
         val isTransparent = inferredColor.alpha < 1f

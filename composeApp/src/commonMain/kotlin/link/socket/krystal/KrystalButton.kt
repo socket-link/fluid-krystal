@@ -3,11 +3,11 @@ package link.socket.krystal
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,9 +19,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.toSize
-import link.socket.krystal.blur.BackdropBlurContainer
 import link.socket.krystal.engine.ContentAnalysis
+import link.socket.krystal.engine.LocalKrystalContainerContext
 import kotlin.math.abs
+import kotlin.random.Random
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -33,23 +34,23 @@ fun KrystalButton(
     enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit
 ) {
-    val krystalContext = LocalKrystalContext.current
+    val krystalContext = LocalKrystalContainerContext.current
     var buttonBounds by remember { mutableStateOf(Rect.Zero) }
 
-    val buttonId = remember { "krystal_button_${Clock.System.now().toEpochMilliseconds()}_${kotlin.random.Random.nextInt()}" }
+    val surfaceId = remember { "krystal_button_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt()}" }
 
-    LaunchedEffect(buttonId, buttonBounds, krystalContext) {
+    LaunchedEffect(surfaceId, buttonBounds) {
         if (buttonBounds != Rect.Zero) {
-            val buttonContext = KrystalContext(buttonBounds, krystalContext.contentCaptureEngine)
-            KrystalDebugRegistry.registerButton(buttonId, buttonContext)
-            println("🔘 Registered button $buttonId with bounds $buttonBounds")
+            KrystalDebug.registerButton(surfaceId, buttonBounds)
+            println("🔘 Registered button $surfaceId with bounds $buttonBounds")
         }
     }
 
-    DisposableEffect(buttonId) {
+    DisposableEffect(surfaceId) {
         onDispose {
-            KrystalDebugRegistry.unregisterButton(buttonId)
-            println("🔘 Unregistered button $buttonId")
+            KrystalDebug.unregisterButton(surfaceId)
+            krystalContext.contextStateEngine.unregisterSurfaceContext(surfaceId)
+            println("🔘 Unregistered button $surfaceId")
         }
     }
 
@@ -61,63 +62,75 @@ fun KrystalButton(
         }
     }
 
-    val buttonColors = ButtonDefaults.buttonColors(
-        containerColor = Color.Transparent,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-    )
-
     var isPressed by remember { mutableStateOf(false) }
 
-    val style = remember(enabled) {
-        KrystalStyle()
+    val currentSurfaceContextFlow = remember(surfaceId) {
+        krystalContext.contextStateEngine.getSurfaceContextFlow(surfaceId)
     }
 
-    val effectiveOpacity = if (isPressed) {
-        style.backgroundOpacity * 2f
-    } else {
-        style.backgroundOpacity
+    val currentSurfaceContext by currentSurfaceContextFlow.collectAsState()
+
+    val activeStyle = remember(enabled, isPressed, currentSurfaceContext.surfaceStyle) {
+        with (currentSurfaceContext.surfaceStyle) {
+            val effectiveOpacity = if (isPressed) {
+                backgroundOpacity * 2f
+            } else {
+                backgroundOpacity
+            }
+
+            copy(
+                backgroundOpacity = effectiveOpacity,
+            )
+        }
     }
 
-    val pressedStyle = style.copy(backgroundOpacity = effectiveOpacity)
-
-    BackdropBlurContainer(
-        modifier = modifier,
-    ) {
-        Button(
-            modifier = Modifier
-                .krystalized(pressedStyle)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            isPressed = true
-                            tryAwaitRelease()
-                            isPressed = false
-                        }
-                    )
-                }
-                .onGloballyPositioned { coordinates ->
-                    val newBounds = Rect(
-                        offset = coordinates.localToWindow(Offset.Zero),
-                        size = coordinates.size.toSize()
-                    )
-                    if ((newBounds.center - buttonBounds.center).getDistance() > 0.1f ||
-                        abs(newBounds.width - buttonBounds.width) > 0.1f ||
-                        abs(newBounds.height - buttonBounds.height) > 0.1f
-                    ) {
-                        buttonBounds = newBounds
-
-                        if (buttonBounds != Rect.Zero) {
-                            val updatedContext = KrystalContext(buttonBounds, krystalContext.contentCaptureEngine)
-                            KrystalDebugRegistry.registerButton(buttonId, updatedContext)
-                            println("🔘 Updated button $buttonId position: $buttonBounds")
-                        }
-                    }
-                },
-            colors = buttonColors,
-            enabled = enabled,
-            interactionSource = null,
-            onClick = onClick,
-            content = content,
+    LaunchedEffect(surfaceId, activeStyle) {
+        krystalContext.contextStateEngine.updateSurfaceContext(
+            id = surfaceId,
+            surfaceStyle = activeStyle,
         )
     }
+
+    val buttonColors = buttonColors(
+        containerColor = Color.Transparent,
+        contentColor = Color.Black,
+    )
+
+    Button(
+        modifier = modifier
+            .krystalizedSurface(
+                context = currentSurfaceContext,
+            )
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        tryAwaitRelease()
+                        isPressed = false
+                    }
+                )
+            }
+            .onGloballyPositioned { coordinates ->
+                val newBounds = Rect(
+                    offset = coordinates.localToWindow(Offset.Zero),
+                    size = coordinates.size.toSize()
+                )
+                if ((newBounds.center - buttonBounds.center).getDistance() > 0.1f ||
+                    abs(newBounds.width - buttonBounds.width) > 0.1f ||
+                    abs(newBounds.height - buttonBounds.height) > 0.1f
+                ) {
+                    buttonBounds = newBounds
+
+                    if (buttonBounds != Rect.Zero) {
+                        KrystalDebug.registerButton(surfaceId, buttonBounds)
+                        println("🔘 Updated button $surfaceId position: $buttonBounds")
+                    }
+                }
+            },
+        colors = buttonColors,
+        enabled = enabled,
+        interactionSource = null,
+        onClick = onClick,
+        content = content,
+    )
 }
