@@ -7,13 +7,13 @@ data class KrystalSurfaceContext(
     val surfaceId: String,
     val surfaceHazeState: HazeState,
     val surfaceContent: ContentInfo,
-    val surfaceStyle: KrystalStyle,
+    val surfaceStyle: KrystalStyle.Surface,
 ) {
     companion object {
         fun empty(
             id: String,
             baseHazeState: HazeState,
-            baseKrystalStyle: KrystalStyle,
+            baseKrystalStyle: KrystalStyle.Surface,
         ) = KrystalSurfaceContext(
             surfaceId = id,
             surfaceHazeState = baseHazeState,

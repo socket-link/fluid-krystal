@@ -7,7 +7,6 @@ import androidx.compose.material3.ButtonDefaults.buttonColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.toSize
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import link.socket.krystal.engine.ContentAnalysis
 import link.socket.krystal.engine.LocalKrystalContainerContext
 import kotlin.math.abs
@@ -38,6 +38,7 @@ fun KrystalButton(
     var buttonBounds by remember { mutableStateOf(Rect.Zero) }
 
     val surfaceId = remember { "krystal_button_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt()}" }
+    val currentSurfaceContext = krystalContext.contextStateEngine.getSurfaceContextFlow(surfaceId).collectAsStateWithLifecycle()
 
     LaunchedEffect(surfaceId, buttonBounds) {
         if (buttonBounds != Rect.Zero) {
@@ -64,31 +65,19 @@ fun KrystalButton(
 
     var isPressed by remember { mutableStateOf(false) }
 
-    val currentSurfaceContextFlow = remember(surfaceId) {
-        krystalContext.contextStateEngine.getSurfaceContextFlow(surfaceId)
-    }
-
-    val currentSurfaceContext by currentSurfaceContextFlow.collectAsState()
-
-    val activeStyle = remember(enabled, isPressed, currentSurfaceContext.surfaceStyle) {
-        with (currentSurfaceContext.surfaceStyle) {
-            val effectiveOpacity = if (isPressed) {
-                backgroundOpacity * 2f
-            } else {
-                backgroundOpacity
-            }
-
-            copy(
-                backgroundOpacity = effectiveOpacity,
+    LaunchedEffect(isPressed) {
+        with(currentSurfaceContext.value.surfaceStyle) {
+            krystalContext.contextStateEngine.updateSurfaceContext(
+                id = surfaceId,
+                surfaceStyle = copy(
+                    backgroundOpacity = if (isPressed) {
+                        backgroundOpacity * 2f
+                    } else {
+                        backgroundOpacity
+                    }
+                ),
             )
         }
-    }
-
-    LaunchedEffect(surfaceId, activeStyle) {
-        krystalContext.contextStateEngine.updateSurfaceContext(
-            id = surfaceId,
-            surfaceStyle = activeStyle,
-        )
     }
 
     val buttonColors = buttonColors(
@@ -99,7 +88,8 @@ fun KrystalButton(
     Button(
         modifier = modifier
             .krystalizedSurface(
-                context = currentSurfaceContext,
+                hazeState = currentSurfaceContext.value.surfaceHazeState,
+                surfaceStyle = currentSurfaceContext.value.surfaceStyle,
             )
             .pointerInput(Unit) {
                 detectTapGestures(

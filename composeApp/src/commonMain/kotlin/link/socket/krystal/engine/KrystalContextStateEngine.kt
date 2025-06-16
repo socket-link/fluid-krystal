@@ -13,24 +13,24 @@ import link.socket.krystal.KrystalStyle
 class KrystalContextStateEngine(
     val scope: CoroutineScope,
     val baseHazeState: HazeState,
-    val baseKrystalStyle: KrystalStyle,
+    val baseKrystalSurfaceStyle: KrystalStyle.Surface,
 ) {
     private val _surfaceContextsFlow: MutableStateFlow<Map<String, KrystalSurfaceContext?>> =
         MutableStateFlow(mutableMapOf())
 
     fun getSurfaceContextFlow(id: String): StateFlow<KrystalSurfaceContext> =
         _surfaceContextsFlow.asStateFlow().map { contexts ->
-            contexts[id] ?: KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalStyle)
+            contexts[id] ?: KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalSurfaceStyle)
         }.stateIn(
             scope,
             SharingStarted.Lazily,
-            KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalStyle),
+            KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalSurfaceStyle),
         )
 
     fun updateSurfaceContext(
         id: String,
         surfaceContent: ContentInfo? = null,
-        surfaceStyle: KrystalStyle? = null,
+        surfaceStyle: KrystalStyle.Surface? = null,
     ) {
         val currentContext = _surfaceContextsFlow.value[id]
         val updatedContext = if (surfaceContent != null || surfaceStyle != null) {
@@ -38,7 +38,7 @@ class KrystalContextStateEngine(
                 surfaceId = id,
                 surfaceContent = surfaceContent ?: currentContext.surfaceContent,
                 surfaceStyle = surfaceStyle ?: currentContext.surfaceStyle,
-            ) ?: KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalStyle)
+            ) ?: KrystalSurfaceContext.empty(id, baseHazeState, baseKrystalSurfaceStyle)
         } else {
             currentContext
         }

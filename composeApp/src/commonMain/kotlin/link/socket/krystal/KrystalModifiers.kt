@@ -1,6 +1,7 @@
 package link.socket.krystal
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -18,11 +19,11 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.toSize
 import dev.chrisbanes.haze.HazeProgressive
+import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import kotlinx.coroutines.delay
 import link.socket.krystal.engine.ContentAnalysis
 import link.socket.krystal.engine.KrystalContainerContext
-import link.socket.krystal.engine.KrystalSurfaceContext
 import link.socket.krystal.engine.LocalKrystalContainerContext
 
 fun Modifier.krystalizedContainer(
@@ -37,41 +38,39 @@ fun Modifier.krystalizedContainer(
 
     this.hazeEffect(
         state = hazeState,
-        style = context.baseKrystalStyle.hazeStyle,
+        style = context.baseKrystalContainerStyle.hazeStyle,
     ) {
-        progressive = HazeProgressive.horizontalGradient(
-            easing = FastOutSlowInEasing,
+        progressive = HazeProgressive.verticalGradient(
+            easing = LinearEasing,
             startIntensity = 1f,
-            endIntensity = .25f,
+            endIntensity = 0f,
         )
     }
 }
 
 fun Modifier.krystalizedSurface(
-    context: KrystalSurfaceContext,
+    hazeState: HazeState,
+    surfaceStyle: KrystalStyle.Surface,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "krystalizedSurface"
-        properties["context"] = context
+        properties["hazeState"] = hazeState
+        properties["surfaceStyle"] = surfaceStyle
     }
 ) {
-    val shape = RoundedCornerShape(context.surfaceStyle.cornerRadius)
-    val hazeState = context.surfaceHazeState
+    val shape = RoundedCornerShape(surfaceStyle.cornerRadius)
+    val hazeState = hazeState
 
     this.clip(shape)
         .hazeEffect(
             state = hazeState,
-            style = context.surfaceStyle.hazeStyle,
+            style = surfaceStyle.hazeStyle,
         ) {
-            progressive = HazeProgressive.horizontalGradient(
-                easing = FastOutSlowInEasing,
-                startIntensity = 1f,
-                endIntensity = .25f,
-            )
+            progressive = HazeProgressive.LinearGradient()
         }
         .border(
-            width = context.surfaceStyle.borderThickness,
-            color = context.surfaceStyle.borderColor,
+            width = surfaceStyle.borderThickness,
+            color = surfaceStyle.borderColor,
             shape = shape
         )
 }

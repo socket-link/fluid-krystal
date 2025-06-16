@@ -8,7 +8,7 @@ import link.socket.krystal.KrystalStyle
 
 data class KrystalContainerContext(
     val baseHazeState: HazeState,
-    val baseKrystalStyle: KrystalStyle,
+    val baseKrystalContainerStyle: KrystalStyle.Container,
     val contextStateEngine: KrystalContextStateEngine,
     val contentCaptureEngine: KrystalContentCaptureEngine,
     val containerContent: List<ContentInfo>,
@@ -17,18 +17,19 @@ data class KrystalContainerContext(
         fun newInstance(
             scope: CoroutineScope,
             baseHazeState: HazeState,
-            baseKrystalStyle: KrystalStyle,
+            baseKrystalContainerStyle: KrystalStyle.Container,
+            baseKrystalSurfaceStyle: KrystalStyle.Surface,
             contentEngine: KrystalContentCaptureEngine = KrystalContentCaptureEngine(),
         ): KrystalContainerContext {
             val contextEngine = KrystalContextStateEngine(
                 scope,
                 baseHazeState,
-                baseKrystalStyle,
+                baseKrystalSurfaceStyle,
             )
 
             return KrystalContainerContext(
                 baseHazeState = baseHazeState,
-                baseKrystalStyle = baseKrystalStyle,
+                baseKrystalContainerStyle = baseKrystalContainerStyle,
                 contextStateEngine = contextEngine,
                 contentCaptureEngine = contentEngine,
                 containerContent = emptyList(),
