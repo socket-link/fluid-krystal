@@ -14,7 +14,7 @@ data class KrystalStyle(
     val tintColor: Color = Color.White.copy(alpha = 0.15f),
     val borderColor: Color = Color.White.copy(alpha = 0.5f),
     val borderThickness: Dp = 1.5.dp,
-    val noiseFactor: Float = 0.75f,
+    val noiseFactor: Float = 0.5f,
 )
 
 val KrystalStyle.hazeStyle: HazeStyle
