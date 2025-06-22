@@ -13,17 +13,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import krystal.composeapp.generated.resources.Res
 import krystal.composeapp.generated.resources.compose_multiplatform
 import krystal.composeapp.generated.resources.test
@@ -88,53 +90,63 @@ fun SimpleListContent(
 fun BoxScope.AppForegroundContent() {
     Row(
         modifier = Modifier
-            .align(Alignment.TopCenter)
-            .wrapContentWidth()
-            .padding(vertical = 24.dp),
-        horizontalArrangement = Arrangement.Center,
+            .align(TopCenter)
+            .fillMaxWidth()
+            .padding(
+                horizontal = 16.dp,
+                vertical = 56.dp,
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KrystalButton(
-            modifier = Modifier
-                .padding(vertical = 8.dp),
+            modifier = Modifier.requiredSize(64.dp),
             onClick = { },
         ) {
-            Icon(
+            Image(
                 modifier = Modifier
-                    .requiredSize(32.dp),
+                    .requiredSize(24.dp),
                 imageVector = Icons.Filled.ArrowBackIosNew,
                 contentDescription = "Back"
             )
         }
 
-        Text(
-            modifier = Modifier
-                .padding(horizontal = 16.dp),
-            text = "Screen Title",
-            style = MaterialTheme.typography.titleLarge,
-        )
-
         KrystalButton(
             modifier = Modifier
-                .padding(vertical = 8.dp)
-                .wrapContentWidth(),
+                .requiredWidth(112.dp)
+                .requiredHeight(64.dp),
             onClick = { },
         ) {
-            Row {
-                Icon(
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Image(
                     modifier = Modifier
-                        .requiredSize(32.dp),
+                        .requiredSize(24.dp)
+                        .rotate(-90f),
                     imageVector = Icons.Filled.ArrowBackIosNew,
-                    contentDescription = "Back"
+                    contentDescription = "Back",
                 )
-                Spacer(modifier = Modifier.requiredWidth(8.dp))
-                Icon(
+                Spacer(modifier = Modifier.requiredWidth(24.dp))
+                Image(
                     modifier = Modifier
-                        .requiredSize(32.dp),
+                        .requiredSize(24.dp)
+                        .rotate(90f),
                     imageVector = Icons.Filled.ArrowBackIosNew,
                     contentDescription = "Back"
                 )
             }
         }
     }
+
+    Text(
+        modifier = Modifier
+            .padding(top = 80.dp)
+            .align(TopCenter),
+        text = "Screen Title",
+        style = MaterialTheme.typography.titleMedium.copy(
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+        ),
+    )
 }

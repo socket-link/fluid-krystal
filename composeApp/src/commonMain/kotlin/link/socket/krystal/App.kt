@@ -39,7 +39,7 @@ fun App() {
                 DemoTab.SIMPLE_LIST -> {
                     val scrollState = rememberScrollState()
                     KrystalContainer(
-                        modifier = Modifier.fillMaxHeight(0.8f),
+                        modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
                         backgroundContent = { SimpleListContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },
@@ -48,7 +48,7 @@ fun App() {
                 DemoTab.MUSIC_LIGHT -> {
                     val scrollState = rememberScrollState()
                     KrystalContainer(
-                        modifier = Modifier.fillMaxHeight(0.8f),
+                        modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
                         backgroundContent = { MusicLightContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },
@@ -57,7 +57,7 @@ fun App() {
                 DemoTab.MUSIC_DARK -> {
                     val scrollState = rememberScrollState()
                     KrystalContainer(
-                        modifier = Modifier.fillMaxHeight(0.8f),
+                        modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
                         backgroundContent = { MusicDarkContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },

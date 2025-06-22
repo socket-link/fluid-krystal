@@ -34,15 +34,12 @@ import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
-private val baseKrystalContainerStyle = KrystalStyle.Container()
-private val baseKrystalSurfaceStyle = KrystalStyle.Surface()
-
 @Composable
 fun KrystalContainer(
     scrollState: ScrollState,
     modifier: Modifier = Modifier,
-    baseContainerStyle: KrystalStyle.Container = baseKrystalContainerStyle,
-    baseSurfaceStyle: KrystalStyle.Surface = baseKrystalSurfaceStyle,
+    baseContainerStyle: KrystalStyle.Container = baseKrystalContainerStyle(),
+    baseSurfaceStyle: KrystalStyle.Surface = baseKrystalSurfaceStyle(),
     backgroundContent: @Composable BoxScope.() -> Unit,
     foregroundContent: @Composable BoxScope.() -> Unit,
 ) {
@@ -188,7 +185,7 @@ fun KrystalContainer(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .requiredHeight(100.dp)
+                            .requiredHeight(168.dp)
                             .krystalizedContainer(LocalKrystalContainerContext.current)
                     )
 
