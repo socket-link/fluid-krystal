@@ -23,23 +23,28 @@ import androidx.compose.ui.unit.toSize
 import dev.chrisbanes.haze.HazeProgressive
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
+import link.socket.krystal.curve.CurveState
+import link.socket.krystal.curve.CurveStyle
+import link.socket.krystal.curve.curveEffect
+import link.socket.krystal.curve.curveSource
 import link.socket.krystal.engine.ContentAnalysis
-import link.socket.krystal.engine.KrystalContainerContext
 import link.socket.krystal.engine.LocalKrystalContainerContext
 
 fun Modifier.krystalizedContainer(
-    context: KrystalContainerContext,
+    hazeState: HazeState,
+    curveState: CurveState,
+    containerStyle: KrystalStyle.Container,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "krystalizedContainer"
-        properties["context"] = context
     }
 ) {
-    val containerStyle = context.baseKrystalContainerStyle
-    val hazeState = context.baseHazeState
-
     this
+        .hazeSource(
+            state = hazeState,
+        )
         .hazeEffect(
             state = hazeState,
             style = containerStyle.containerHazeStyle,
@@ -50,17 +55,22 @@ fun Modifier.krystalizedContainer(
                 endIntensity = 0f,
             )
         }
+        .curveSource(
+            state = curveState,
+        )
 }
 
 fun Modifier.krystalizedSurface(
     hazeState: HazeState,
+    curveState: CurveState,
     surfaceStyle: KrystalStyle.Surface,
 ): Modifier = composed(
     inspectorInfo = debugInspectorInfo {
         name = "krystalizedSurface"
         properties["hazeState"] = hazeState
+        properties["curveState"] = curveState
         properties["surfaceStyle"] = surfaceStyle
-    }
+    },
 ) {
     val shape = RoundedCornerShape(surfaceStyle.cornerRadius)
 
@@ -72,12 +82,16 @@ fun Modifier.krystalizedSurface(
             style = surfaceStyle.surfaceHazeStyle,
         ) {
             progressive = HazeProgressive.RadialGradient(
-                easing = CubicBezierEasing(0.4f, 0.0f, 0.1f, 0.8f),
-                centerIntensity = 0.1f,
+                easing = CubicBezierEasing(0.2f, 0.0f, 0.4f, 0.4f),
+                centerIntensity = 0.2f,
                 radius = surfaceStyle.blurRadius.value,
-                radiusIntensity = 0.9f,
+                radiusIntensity = 1f,
             )
         }
+        .curveEffect(
+            curveState = curveState,
+            style = CurveStyle.Unspecified,
+        )
         .border(
             width = surfaceStyle.borderThickness * 3,
             color = Color.LightGray.copy(alpha = 0.1f),
@@ -110,6 +124,7 @@ fun Modifier.krystalizedSurface(
         )
 }
 
+// TODO: Add back
 fun Modifier.autoAnalyzeBackground(
     onContentAnalyzed: (ContentAnalysis) -> Unit
 ): Modifier = composed(
@@ -149,6 +164,7 @@ fun Modifier.autoAnalyzeBackground(
     }
 }
 
+// TODO: Add back
 @Composable
 fun rememberDebouncedContentAnalysis(
     analysis: ContentAnalysis,

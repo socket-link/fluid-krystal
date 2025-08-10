@@ -43,10 +43,6 @@ kotlin {
     }
     
     sourceSets {
-        val desktopMain by getting {
-            dependsOn(commonMain.get())
-        }
-        
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
@@ -64,9 +60,21 @@ kotlin {
             implementation(libs.kotlin.test)
         }
 
-        androidMain.dependencies {
-            implementation(compose.preview)
-            implementation(libs.androidx.activity.compose)
+        val skikoMain by creating {
+            dependsOn(commonMain.get())
+        }
+
+        androidMain {
+            dependsOn(skikoMain)
+
+            dependencies {
+                implementation(compose.preview)
+                implementation(libs.androidx.activity.compose)
+            }
+        }
+
+        val desktopMain by getting {
+            dependsOn(skikoMain)
         }
 
         desktopMain.dependencies {

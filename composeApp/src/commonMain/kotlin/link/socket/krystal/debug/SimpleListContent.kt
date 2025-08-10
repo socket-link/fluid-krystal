@@ -2,6 +2,7 @@ package link.socket.krystal.debug
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -19,10 +20,17 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.TopCenter
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,6 +38,9 @@ import krystal.composeapp.generated.resources.Res
 import krystal.composeapp.generated.resources.compose_multiplatform
 import krystal.composeapp.generated.resources.test
 import link.socket.krystal.KrystalButton
+import link.socket.krystal.KrystalStyle
+import link.socket.krystal.baseKrystalSurfaceStyle
+import link.socket.krystal.engine.LocalKrystalContainerContext
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -86,8 +97,14 @@ fun SimpleListContent(
     }
 }
 
+// Replace this with cache management in the engine
+private const val ONE_ID = "button_one"
+private const val TWO_ID = "button_two"
+
 @Composable
-fun BoxScope.AppForegroundContent() {
+fun BoxScope.AppForegroundContent(
+    baseSurfaceStyle: KrystalStyle.Surface = baseKrystalSurfaceStyle(),
+) {
     Row(
         modifier = Modifier
             .align(TopCenter)
@@ -99,9 +116,46 @@ fun BoxScope.AppForegroundContent() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        val krystalContext = LocalKrystalContainerContext.current
+
+        // Replace this with cache management in the engine
+        val surfaceStyleCache = remember {
+            mutableStateMapOf<String, KrystalStyle.Surface>()
+        }
+
+        LaunchedEffect(baseSurfaceStyle) {
+            surfaceStyleCache[ONE_ID] = baseSurfaceStyle
+            surfaceStyleCache[TWO_ID] = baseSurfaceStyle
+        }
+
+        // Move capture into engine
+        var isOnePressed by remember { mutableStateOf(false) }
+
         KrystalButton(
-            modifier = Modifier.requiredSize(64.dp),
-            onClick = { },
+            modifier = Modifier
+                .requiredSize(64.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isOnePressed = true
+                            tryAwaitRelease()
+                            isOnePressed = false
+                        }
+                    )
+                },
+            onClick = {
+                val newStyle = with(surfaceStyleCache[ONE_ID]) {
+                    this?.copy(
+                        backgroundOpacity = if (isOnePressed) {
+                            backgroundOpacity * 2f
+                        } else {
+                            backgroundOpacity
+                        },
+                    ) ?: KrystalStyle.Surface.EMPTY
+                }
+
+                surfaceStyleCache[ONE_ID] = newStyle
+            },
         ) {
             Image(
                 modifier = Modifier
@@ -111,11 +165,35 @@ fun BoxScope.AppForegroundContent() {
             )
         }
 
+        // Move capture into engine
+        var isTwoPressed by remember { mutableStateOf(false) }
+
         KrystalButton(
             modifier = Modifier
                 .requiredWidth(112.dp)
-                .requiredHeight(64.dp),
-            onClick = { },
+                .requiredHeight(64.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            isOnePressed = true
+                            tryAwaitRelease()
+                            isOnePressed = false
+                        }
+                    )
+                },
+            onClick = {
+                val newStyle = with(surfaceStyleCache[TWO_ID]) {
+                    this?.copy(
+                        backgroundOpacity = if (isTwoPressed) {
+                            backgroundOpacity * 2f
+                        } else {
+                            backgroundOpacity
+                        },
+                    )
+                }
+
+                surfaceStyleCache[TWO_ID] = newStyle ?: KrystalStyle.Surface.EMPTY
+            },
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -16,19 +16,16 @@ object KrystalDebug {
     ) {
         buttonBounds[id] = bounds
         _updateTrigger.value++
-        println("📋 Button registry updated: ${buttonBounds.size} buttons, trigger: $updateTrigger")
     }
 
     fun unregisterButton(id: String) {
         buttonBounds.remove(id)
         _updateTrigger.value++
-        println("📋 Button unregistered: ${buttonBounds.size} buttons remaining, trigger: $updateTrigger")
     }
 
     fun getAllButtonBounds(): Map<String, Rect> = buttonBounds.toMap()
 
     fun forceUpdate() {
         _updateTrigger.value++
-        println("📋 Forced registry update, trigger: $updateTrigger")
     }
 }

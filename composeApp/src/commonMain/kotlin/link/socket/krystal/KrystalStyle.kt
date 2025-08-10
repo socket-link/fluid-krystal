@@ -66,7 +66,19 @@ sealed class KrystalStyle(
         borderThickness = borderThickness,
         noiseFactor = noiseFactor,
         gradientType = GradientType.VERTICAL,
-    )
+    ) {
+        companion object {
+            val EMPTY = Container(
+                cornerRadius = 0.dp,
+                blurRadius = 0.dp,
+                backgroundOpacity = 0f,
+                backgroundColor = Color.Transparent,
+                borderColor = Color.Transparent,
+                borderThickness = 0.dp,
+                noiseFactor = 0f,
+            )
+        }
+    }
 
     data class Surface(
         override val cornerRadius: Dp,
@@ -85,7 +97,19 @@ sealed class KrystalStyle(
         borderThickness = borderThickness,
         noiseFactor = noiseFactor,
         gradientType = GradientType.RADIAL,
-    )
+    ) {
+        companion object {
+            val EMPTY = Surface(
+                cornerRadius = 0.dp,
+                blurRadius = 0.dp,
+                backgroundOpacity = 0f,
+                backgroundColor = Color.Transparent,
+                borderColor = Color.Transparent,
+                borderThickness = 0.dp,
+                noiseFactor = 0f,
+            )
+        }
+    }
 }
 
 val KrystalStyle.containerHazeStyle: HazeStyle
@@ -142,7 +166,6 @@ private fun createContainerGlassGradient(
         }
     }
 }
-
 
 private fun createSurfaceGlassGradient(
     style: KrystalStyle,

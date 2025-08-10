@@ -6,30 +6,25 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import link.socket.krystal.engine.DrawingHints
 import link.socket.krystal.engine.ContentInfo
-import link.socket.krystal.engine.KrystalContainerContext
 import link.socket.krystal.engine.LocalKrystalContainerContext
+import link.socket.krystal.engine.rememberKrystalContainerContext
 import kotlin.math.abs
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -37,45 +32,28 @@ import kotlin.time.ExperimentalTime
 @Composable
 fun KrystalContainer(
     scrollState: ScrollState,
-    modifier: Modifier = Modifier,
-    baseContainerStyle: KrystalStyle.Container = baseKrystalContainerStyle(),
-    baseSurfaceStyle: KrystalStyle.Surface = baseKrystalSurfaceStyle(),
     backgroundContent: @Composable BoxScope.() -> Unit,
     foregroundContent: @Composable BoxScope.() -> Unit,
+    modifier: Modifier = Modifier,
+    baseContainerStyle: KrystalStyle.Container = baseKrystalContainerStyle(),
 ) {
+    val krystalContainerContext = rememberKrystalContainerContext(baseContainerStyle)
+    val layoutInfoChannel = remember { Channel<ContentInfo>(Channel.UNLIMITED) }
+
+    val hazeState = krystalContainerContext.hazeState.collectAsState()
+    val curveState = krystalContainerContext.curveState.collectAsState()
+    val containerStyle = krystalContainerContext.containerStyle.collectAsState()
+
     var containerBounds by remember { mutableStateOf(Rect.Zero) }
     var lastProcessedTime by remember { mutableStateOf(0L) }
     var lastScrollValue by remember { mutableStateOf(0) }
 
-    val scope = rememberCoroutineScope()
-    val backgroundHazeState = rememberHazeState()
-
-    val krystalContainerContext = remember {
-        mutableStateOf(
-            KrystalContainerContext.newInstance(
-                scope = scope,
-                baseHazeState = backgroundHazeState,
-                baseKrystalContainerStyle = baseContainerStyle,
-                baseKrystalSurfaceStyle = baseSurfaceStyle,
-            )
-        )
-    }
-
-    val layoutInfoChannel = remember { Channel<ContentInfo>(Channel.UNLIMITED) }
-
-    LaunchedEffect(backgroundHazeState) {
-        krystalContainerContext.value = krystalContainerContext.value.copy(
-            baseHazeState = backgroundHazeState,
-        )
-    }
-
     LaunchedEffect(scrollState.value) {
         val currentScrollValue = scrollState.value
         if (currentScrollValue != lastScrollValue) {
-            println("🔄 Scroll detected: $lastScrollValue -> $currentScrollValue")
             lastScrollValue = currentScrollValue
 
-            krystalContainerContext.value.contentCaptureEngine.forceContentUpdate()
+            krystalContainerContext.contentCaptureEngine.forceContentUpdate()
             KrystalDebug.forceUpdate()
         }
     }
@@ -95,8 +73,7 @@ fun KrystalContainer(
             val enoughTimeHasPassed = currentTime - lastProcessedTime > 100
 
             if (hasEnoughInfo && hasValidBounds && enoughTimeHasPassed) {
-                println("🔄 Processing ${collectedInfo.size} layout items")
-                krystalContainerContext.value.contentCaptureEngine.discoverContent(
+                krystalContainerContext.contentCaptureEngine.discoverContent(
                     containerBounds,
                     collectedInfo.toList(),
                 )
@@ -111,13 +88,13 @@ fun KrystalContainer(
         while (true) {
             delay(1000)
             if (containerBounds != Rect.Zero) {
-                krystalContainerContext.value.contentCaptureEngine.forceContentUpdate()
+                krystalContainerContext.contentCaptureEngine.forceContentUpdate()
                 KrystalDebug.forceUpdate()
             }
         }
     }
 
-    CompositionLocalProvider(LocalKrystalContainerContext provides krystalContainerContext.value) {
+    CompositionLocalProvider(LocalKrystalContainerContext provides krystalContainerContext) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -134,7 +111,6 @@ fun KrystalContainer(
                     
                     if (centerDistance > 0.5f || sizeChanged > 1.0f) {
                         containerBounds = newBounds
-                        println("📏 Container bounds updated: $newBounds")
                         KrystalDebug.forceUpdate()
                     }
 
@@ -161,35 +137,35 @@ fun KrystalContainer(
                 }
                 .drawingListener { operations ->
                     if (operations.isNotEmpty()) {
-                        krystalContainerContext.value.contentCaptureEngine.processDrawingOperations(
+                        krystalContainerContext.contentCaptureEngine.processDrawingOperations(
                             containerBounds,
                             operations,
                         )
                     }
                 },
             content = {
-                val hazeState = LocalKrystalContainerContext.current.baseHazeState
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .hazeSource(hazeState)
-                ) {
-                    backgroundContent()
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
+                        .krystalizedContainer(
+                            hazeState = hazeState.value,
+                            curveState = curveState.value,
+                            containerStyle = containerStyle.value,
+                        ),
                 ) {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .requiredHeight(168.dp)
-                            .krystalizedContainer(LocalKrystalContainerContext.current)
-                    )
+                            .fillMaxSize(),
+                    ) {
+                        backgroundContent()
+                    }
 
-                    foregroundContent()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize(),
+                    ) {
+                        foregroundContent()
+                    }
                 }
             }
         )

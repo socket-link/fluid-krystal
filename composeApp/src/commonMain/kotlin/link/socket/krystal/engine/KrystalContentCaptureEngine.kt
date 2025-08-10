@@ -2,8 +2,10 @@
 
 package link.socket.krystal.engine
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Rect
@@ -13,6 +15,13 @@ import kotlin.collections.emptyMap
 import kotlin.collections.plus
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
+
+@Composable
+fun rememberKrystalContentCaptureEngine(): KrystalContentCaptureEngine {
+    return remember {
+        KrystalContentCaptureEngine()
+    }
+}
 
 class KrystalContentCaptureEngine {
 
@@ -35,33 +44,25 @@ class KrystalContentCaptureEngine {
         rootBounds: Rect,
         layoutInfo: List<ContentInfo>
     ) {
-        println("🔍 discoverContent called with ${layoutInfo.size} layout items")
-        
         val hierarchy = buildAdvancedContentHierarchy(layoutInfo, rootBounds)
         _contentHierarchy = hierarchy
 
         val discovered = extractContentRegions(hierarchy)
         
-        println("🔍 Discovered ${discovered.size} content regions")
-
         val hasSignificantChange = discovered.size != _discoveredContent.size || discovered.keys != _discoveredContent.keys
     
         if (hasSignificantChange) {
-            println("🔍 Updating discoveredContent from ${_discoveredContent.size} to ${discovered.size} regions")
             _discoveredContent = discovered
             discoveryVersion++
             debugUpdateTrigger++
-            println("🔍 Debug trigger incremented to: $debugUpdateTrigger")
             _analysisCache = emptyMap()
-            println("🧹 Analysis cache cleared due to content change")
         }
     }
 
     fun analyzeRegion(region: Rect): ContentAnalysis {
         val cacheKey = region
         _analysisCache[cacheKey]?.let { (analysis, _) -> 
-            println("💾 Cache hit for region: $region")
-            return analysis 
+            return analysis
         }
 
         val intersectingContent = _discoveredContent.values.filter { content ->
@@ -72,7 +73,6 @@ class KrystalContentCaptureEngine {
 
         val timestamp = Clock.System.now().toEpochMilliseconds()
         _analysisCache = _analysisCache.plus(cacheKey to (analysis to timestamp))
-        println("💾 Cached analysis for region: $region (cache size: ${_analysisCache.size})")
 
         cleanupCache()
         return analysis
@@ -80,7 +80,6 @@ class KrystalContentCaptureEngine {
 
     fun recordInteraction(bounds: Rect, interactionType: InteractionType) {
         _interactionHistory = _interactionHistory + (bounds to interactionType)
-        println("👆 Recorded interaction: $interactionType at $bounds")
     }
 
     @OptIn(ExperimentalTime::class)
@@ -91,7 +90,6 @@ class KrystalContentCaptureEngine {
             val shouldUpdate = (Clock.System.now().toEpochMilliseconds() / 1000) % 5 == 0L
             if (shouldUpdate) {
                 debugUpdateTrigger++
-                println("📊 Drawing operations processed, debug trigger incremented to: $debugUpdateTrigger")
             }
         }
     }
@@ -526,14 +524,12 @@ class KrystalContentCaptureEngine {
             
             _analysisCache = sortedEntries.associateBy({ it.key }, { it.value })
             debugUpdateTrigger++
-            println("🧹 Cache cleaned, debug trigger incremented to: $debugUpdateTrigger")
         }
     }
 
     fun forceContentUpdate() {
         if (_discoveredContent.isNotEmpty()) {
             debugUpdateTrigger++
-            println("🔄 Forced content update, debug trigger: $debugUpdateTrigger")
         }
     }
 }

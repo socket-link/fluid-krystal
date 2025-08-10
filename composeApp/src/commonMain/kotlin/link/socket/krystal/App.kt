@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,14 +29,11 @@ fun App() {
     MaterialTheme {
         var selectedTab by remember { mutableStateOf(DemoTab.SIMPLE_LIST) }
 
-        LaunchedEffect(selectedTab) {
-            println(selectedTab)
-        }
-
         Column {
             when (selectedTab) {
                 DemoTab.SIMPLE_LIST -> {
                     val scrollState = rememberScrollState()
+
                     KrystalContainer(
                         modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
@@ -45,8 +41,10 @@ fun App() {
                         foregroundContent = { AppForegroundContent() },
                     )
                 }
+
                 DemoTab.MUSIC_LIGHT -> {
                     val scrollState = rememberScrollState()
+
                     KrystalContainer(
                         modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
@@ -54,8 +52,10 @@ fun App() {
                         foregroundContent = { AppForegroundContent() },
                     )
                 }
+
                 DemoTab.MUSIC_DARK -> {
                     val scrollState = rememberScrollState()
+
                     KrystalContainer(
                         modifier = Modifier.fillMaxHeight(0.9f),
                         scrollState = scrollState,
@@ -69,7 +69,6 @@ fun App() {
                 modifier = Modifier.requiredHeightIn(min = 56.dp),
                 selectedTab = selectedTab,
                 onTabSelected = { newTab ->
-                    println("Selected tab: $newTab")
                     selectedTab = newTab
                     KrystalDebug.forceUpdate()
                 }
