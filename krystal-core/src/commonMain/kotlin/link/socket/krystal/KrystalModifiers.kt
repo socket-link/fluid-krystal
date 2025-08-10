@@ -15,7 +15,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.dp
@@ -94,32 +93,32 @@ fun Modifier.krystalizedSurface(
         )
         .border(
             width = surfaceStyle.borderThickness * 3,
-            color = Color.LightGray.copy(alpha = 0.1f),
+            color = surfaceStyle.borderColor.copy(alpha = 0.15f),
             shape = shape
         )
         .border(
             width = surfaceStyle.borderThickness * 2,
-            color = Color.LightGray.copy(alpha = 0.3f),
+            color = surfaceStyle.borderColor.copy(alpha = 0.35f),
             shape = shape
         )
         .border(
             width = surfaceStyle.borderThickness,
-            color = Color.LightGray.copy(alpha = 0.4f),
+            color = surfaceStyle.borderColor.copy(alpha = 0.55f),
             shape = shape
         )
         .border(
             width = surfaceStyle.borderThickness * 3,
-            color = surfaceStyle.borderColor.copy(alpha = 0.5f),
+            color = surfaceStyle.borderColor.copy(alpha = 0.7f),
             shape = shape
         )
         .border(
             width = surfaceStyle.borderThickness * 2,
-            color = surfaceStyle.borderColor.copy(alpha = 0.9f),
+            color = surfaceStyle.borderColor.copy(alpha = 0.85f),
             shape = shape
         )
         .border(
             width = surfaceStyle.borderThickness,
-            color = surfaceStyle.borderColor,
+            color = surfaceStyle.borderColor.copy(alpha = 1f),
             shape = shape
         )
 }

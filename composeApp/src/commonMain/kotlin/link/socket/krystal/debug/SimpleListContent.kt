@@ -39,8 +39,9 @@ import krystal.composeapp.generated.resources.compose_multiplatform
 import krystal.composeapp.generated.resources.test
 import link.socket.krystal.KrystalButton
 import link.socket.krystal.KrystalStyle
+import link.socket.krystal.ElevationLevel
 import link.socket.krystal.api.GlassStyle
-import link.socket.krystal.baseKrystalSurfaceStyle
+import link.socket.krystal.krystalSurfaceStyleFor
 import link.socket.krystal.engine.LocalKrystalContainerContext
 import org.jetbrains.compose.resources.painterResource
 
@@ -104,7 +105,7 @@ private const val TWO_ID = "button_two"
 
 @Composable
 fun BoxScope.AppForegroundContent(
-    baseSurfaceStyle: KrystalStyle.Surface = baseKrystalSurfaceStyle(),
+    baseSurfaceStyle: KrystalStyle.Surface = krystalSurfaceStyleFor(ElevationLevel.L3),
 ) {
     Row(
         modifier = Modifier
@@ -124,7 +125,6 @@ fun BoxScope.AppForegroundContent(
             krystalContext?.registerSurface(TWO_ID, GlassStyle.clear())
         }
 
-        // Move capture into engine
         var isOnePressed by remember { mutableStateOf(false) }
 
         KrystalButton(
