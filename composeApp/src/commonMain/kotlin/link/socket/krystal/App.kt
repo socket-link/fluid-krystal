@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import link.socket.krystal.debug.AppForegroundContent
 import link.socket.krystal.debug.DemoTab
 import link.socket.krystal.debug.DemoTabSelector
+import link.socket.krystal.debug.GlassTintDemo
 import link.socket.krystal.debug.MusicDarkContent
 import link.socket.krystal.debug.MusicLightContent
 import link.socket.krystal.debug.SimpleListContent
@@ -62,6 +63,10 @@ fun App() {
                         backgroundContent = { MusicDarkContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },
                     )
+                }
+
+                DemoTab.GLASS_TINTS -> {
+                    GlassTintDemo()
                 }
             }
 
