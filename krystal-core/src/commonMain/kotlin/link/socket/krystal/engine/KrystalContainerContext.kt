@@ -4,17 +4,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import link.socket.krystal.KrystalStyle
+import link.socket.krystal.api.GlassElevation
+import link.socket.krystal.api.GlassStyle
 import link.socket.krystal.curve.CurveState
 import link.socket.krystal.curve.rememberCurveState
 
-val LocalKrystalContainerContext: ProvidableCompositionLocal<KrystalContainerContext> = compositionLocalOf {
-    error("No KrystalContainerContext provided")
+val LocalKrystalContainerContext: ProvidableCompositionLocal<KrystalContainerContext?> = compositionLocalOf {
+    null
 }
 
 data class KrystalContainerContext(
@@ -32,6 +36,36 @@ data class KrystalContainerContext(
     val curveState: StateFlow<CurveState> = _curveState.asStateFlow()
     val containerStyle: StateFlow<KrystalStyle.Container> = _containerStyle.asStateFlow()
     val surfaceStyleCache: StateFlow<Map<String, KrystalStyle.Surface>> = _surfaceStyleCache.asStateFlow()
+
+    fun registerSurface(surfaceId: String, glassStyle: GlassStyle) {
+        val current = _surfaceStyleCache.value.toMutableMap()
+        current[surfaceId] = glassStyle.toKrystalSurfaceStyle()
+        _surfaceStyleCache.value = current
+    }
+
+    fun unregisterSurface(surfaceId: String) {
+        val current = _surfaceStyleCache.value.toMutableMap()
+        current.remove(surfaceId)
+        _surfaceStyleCache.value = current
+    }
+}
+
+fun GlassStyle.toKrystalSurfaceStyle(): KrystalStyle.Surface {
+    val tintColor = tint.tintColor
+    val borderAlpha = when (elevation) {
+        GlassElevation.Raised -> 0.5f
+        GlassElevation.Flat -> 0.3f
+        GlassElevation.Inset -> 0.15f
+    }
+    return KrystalStyle.Surface(
+        cornerRadius = cornerRadius,
+        blurRadius = effectiveBlurRadius,
+        backgroundOpacity = opacity + elevation.backgroundAlpha,
+        backgroundColor = tintColor,
+        borderColor = Color.White.copy(alpha = borderAlpha),
+        borderThickness = 0.8.dp,
+        noiseFactor = 0.2f,
+    )
 }
 
 @Composable

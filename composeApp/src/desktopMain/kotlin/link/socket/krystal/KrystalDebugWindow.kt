@@ -209,7 +209,7 @@ private fun ContentCaptureDebugContent() {
         return
     }
 
-    val krystalContext = LocalKrystalContainerContext.current
+    val krystalContext = LocalKrystalContainerContext.current ?: return
     val engine = krystalContext.contentCaptureEngine
     val engineTrigger = engine.debugUpdateTrigger
 

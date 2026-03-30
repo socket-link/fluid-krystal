@@ -132,7 +132,7 @@ fun Modifier.autoAnalyzeBackground(
         name = "autoAnalyzeBackground"
     }
 ) {
-    val captureEngine = LocalKrystalContainerContext.current.contentCaptureEngine
+    val captureEngine = LocalKrystalContainerContext.current?.contentCaptureEngine ?: return@composed this
     var lastBounds by remember { mutableStateOf<Rect?>(null) }
     var lastAnalysis by remember { mutableStateOf(ContentAnalysis()) }
 

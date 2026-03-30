@@ -39,6 +39,7 @@ import krystal.composeapp.generated.resources.compose_multiplatform
 import krystal.composeapp.generated.resources.test
 import link.socket.krystal.KrystalButton
 import link.socket.krystal.KrystalStyle
+import link.socket.krystal.api.GlassStyle
 import link.socket.krystal.baseKrystalSurfaceStyle
 import link.socket.krystal.engine.LocalKrystalContainerContext
 import org.jetbrains.compose.resources.painterResource
@@ -118,14 +119,9 @@ fun BoxScope.AppForegroundContent(
     ) {
         val krystalContext = LocalKrystalContainerContext.current
 
-        // Replace this with cache management in the engine
-        val surfaceStyleCache = remember {
-            mutableStateMapOf<String, KrystalStyle.Surface>()
-        }
-
         LaunchedEffect(baseSurfaceStyle) {
-            surfaceStyleCache[ONE_ID] = baseSurfaceStyle
-            surfaceStyleCache[TWO_ID] = baseSurfaceStyle
+            krystalContext?.registerSurface(ONE_ID, GlassStyle.clear())
+            krystalContext?.registerSurface(TWO_ID, GlassStyle.clear())
         }
 
         // Move capture into engine
@@ -143,19 +139,7 @@ fun BoxScope.AppForegroundContent(
                         }
                     )
                 },
-            onClick = {
-                val newStyle = with(surfaceStyleCache[ONE_ID]) {
-                    this?.copy(
-                        backgroundOpacity = if (isOnePressed) {
-                            backgroundOpacity * 2f
-                        } else {
-                            backgroundOpacity
-                        },
-                    ) ?: KrystalStyle.Surface.EMPTY
-                }
-
-                surfaceStyleCache[ONE_ID] = newStyle
-            },
+            onClick = { },
         ) {
             Image(
                 modifier = Modifier
@@ -181,19 +165,7 @@ fun BoxScope.AppForegroundContent(
                         }
                     )
                 },
-            onClick = {
-                val newStyle = with(surfaceStyleCache[TWO_ID]) {
-                    this?.copy(
-                        backgroundOpacity = if (isTwoPressed) {
-                            backgroundOpacity * 2f
-                        } else {
-                            backgroundOpacity
-                        },
-                    )
-                }
-
-                surfaceStyleCache[TWO_ID] = newStyle ?: KrystalStyle.Surface.EMPTY
-            },
+            onClick = { },
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
