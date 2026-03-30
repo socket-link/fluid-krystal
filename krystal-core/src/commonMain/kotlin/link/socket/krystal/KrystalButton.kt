@@ -21,21 +21,22 @@ import kotlinx.coroutines.flow.map
 import link.socket.krystal.engine.InteractionType
 import link.socket.krystal.engine.LocalKrystalContainerContext
 import kotlin.math.abs
-import kotlin.random.Random
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+private var buttonCounter = 0
+
 @Composable
 fun KrystalButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    surfaceKey: String? = null,
     content: @Composable RowScope.() -> Unit
 ) {
-    val krystalContext = LocalKrystalContainerContext.current
+    val krystalContext = requireNotNull(LocalKrystalContainerContext.current) {
+        "KrystalButton must be used inside a KrystalContainer"
+    }
 
-    val surfaceId = remember { "krystal_button_${Clock.System.now().toEpochMilliseconds()}_${Random.nextInt()}" }
+    val surfaceId = remember { surfaceKey ?: "krystal_button_${buttonCounter++}" }
     var buttonBounds by remember { mutableStateOf(Rect.Zero) }
 
     val hazeState = krystalContext.hazeState.collectAsState()
