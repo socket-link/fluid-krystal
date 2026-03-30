@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import link.socket.krystal.platform.NativeGlassEffectView
 
 @Composable
 actual fun GlassSurface(
@@ -14,15 +15,19 @@ actual fun GlassSurface(
     modifier: Modifier,
     content: @Composable () -> Unit,
 ) {
-    // Stub: renders tinted translucent background.
-    // Will be wired to native UIVisualEffectView / .glassEffect() in Task 3.
     val shape = RoundedCornerShape(style.cornerRadius)
     Box(
         modifier = modifier
             .shadow(style.elevation.shadowElevation, shape)
-            .clip(shape)
-            .background(style.effectiveBackgroundColor, shape),
+            .clip(shape),
     ) {
+        // Native UIVisualEffectView provides the glass backdrop blur
+        NativeGlassEffectView(
+            style = style,
+            modifier = Modifier.matchParentSize(),
+        )
+
+        // Compose content is rendered on top of the glass effect
         content()
     }
 }
