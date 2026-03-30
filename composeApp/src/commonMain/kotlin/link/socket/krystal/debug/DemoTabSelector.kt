@@ -24,8 +24,8 @@ enum class DemoTab(val title: String) {
     MUSIC_DARK(
         title = "Music (Dark)",
     ),
-    GLASS_TINTS(
-        title = "Glass Tints",
+    GLASS_GALLERY(
+        title = "Glass Gallery",
     ),
 }
 
