@@ -33,4 +33,5 @@ plugins {
 }
 
 include(":composeApp")
+include(":krystal-core")
 include(":shared")
