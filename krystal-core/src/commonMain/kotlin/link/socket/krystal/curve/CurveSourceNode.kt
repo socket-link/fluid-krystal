@@ -14,8 +14,6 @@ import androidx.compose.ui.node.DrawModifierNode
 import androidx.compose.ui.node.GlobalPositionAwareModifierNode
 import androidx.compose.ui.node.LayoutAwareModifierNode
 import androidx.compose.ui.node.TraversableNode
-import androidx.compose.ui.node.currentValueOf
-import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.unit.toSize
 import kotlinx.coroutines.DisposableHandle
 import kotlin.math.roundToInt
@@ -86,19 +84,11 @@ class CurveSourceNode(
             }
 
             if (size.minDimension.roundToInt() >= 1) {
-                val graphicsContext = currentValueOf(LocalGraphicsContext)
-
-                val contentLayer = area.contentLayer
-                    ?.takeUnless { it.isReleased }
-                    ?: graphicsContext.createGraphicsLayer().also {
-                        area.contentLayer = it
-                    }
-
-                contentLayer.record {
+                curveState.graphicsLayer.record {
                     this@draw.drawContentSafely()
                 }
 
-                drawLayer(contentLayer)
+                drawLayer(curveState.graphicsLayer)
             } else {
                 drawContentSafely()
             }
@@ -111,7 +101,6 @@ class CurveSourceNode(
         println("$TAG: onDetach, area=${area.key}")
         preDrawDisposable?.dispose()
         area.reset()
-        area.releaseLayer()
         curveState.removeArea(area)
         println("$TAG: onDetach, new curveState=$curveState")
     }
@@ -121,15 +110,6 @@ class CurveSourceNode(
         area.reset()
     }
 
-    internal fun CurveArea.releaseLayer() {
-        println("$TAG: releaseLayer, releasing layer for area=${this.key}")
-        contentLayer?.let { layer ->
-            currentValueOf(LocalGraphicsContext).releaseGraphicsLayer(layer)
-            println("$TAG: releaseLayer, released $layer for area=${this.key}")
-        }
-        contentLayer = null
-    }
-
     private fun onPositioned(coordinates: LayoutCoordinates, source: String) {
         println("$TAG: onPositioned called from $source, area=${area.key}")
         if (!isAttached) {
@@ -137,8 +117,10 @@ class CurveSourceNode(
             return
         }
 
-        area.positionOnScreen = coordinates.positionInWindow()
+        val pos = coordinates.positionInWindow()
+        area.positionOnScreen = pos
         area.size = coordinates.size.toSize()
+        curveState.position = pos
     }
 
     private fun CurveArea.reset() {

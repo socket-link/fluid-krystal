@@ -39,10 +39,10 @@ fun KrystalButton(
     val surfaceId = remember { surfaceKey ?: "krystal_button_${buttonCounter++}" }
     var buttonBounds by remember { mutableStateOf(Rect.Zero) }
 
-    val hazeState = krystalContext.hazeState.collectAsState()
-    val curveState = krystalContext.curveState.collectAsState()
+    val hazeState by krystalContext.hazeState.collectAsState()
+    val curveState by krystalContext.curveState.collectAsState()
 
-    val surfaceStyle = krystalContext.surfaceStyleCache.map { cache ->
+    val surfaceStyle by krystalContext.surfaceStyleCache.map { cache ->
         cache[surfaceId] ?: KrystalStyle.Surface.EMPTY
     }.collectAsState(KrystalStyle.Surface.EMPTY)
 
@@ -66,9 +66,9 @@ fun KrystalButton(
     Button(
         modifier = modifier
             .krystalizedSurface(
-                hazeState = hazeState.value,
-                curveState = curveState.value,
-                surfaceStyle = surfaceStyle.value,
+                hazeState = hazeState,
+                curveState = curveState,
+                surfaceStyle = surfaceStyle,
             )
             .onGloballyPositioned { coordinates ->
                 val newBounds = Rect(
