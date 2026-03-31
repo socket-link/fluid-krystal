@@ -110,9 +110,9 @@ android {
 publishing {
     publications.withType<MavenPublication> {
         pom {
-            name.set("Krystal Core")
+            name.set("Fluid Krystal")
             description.set("Kotlin Multiplatform glass-effect rendering library")
-            url.set("https://github.com/aspect-build/fluid-krystal")
+            url.set("https://github.com/socket-link/fluid-krystal")
             licenses {
                 license {
                     name.set("The Apache License, Version 2.0")
@@ -127,9 +127,9 @@ publishing {
                 }
             }
             scm {
-                url.set("https://github.com/aspect-build/fluid-krystal")
-                connection.set("scm:git:git://github.com/aspect-build/fluid-krystal.git")
-                developerConnection.set("scm:git:ssh://github.com/aspect-build/fluid-krystal.git")
+                url.set("https://github.com/socket-link/fluid-krystal")
+                connection.set("scm:git:git://github.com/socket-link/fluid-krystal.git")
+                developerConnection.set("scm:git:ssh://github.com/socket-link/fluid-krystal.git")
             }
         }
     }
