@@ -147,7 +147,9 @@ private fun createContainerGlassGradient(
 ): Brush {
     val baseColor = style.backgroundColor.copy(alpha = style.backgroundOpacity)
     val reflectionLayer = baseColor.copy(alpha = 0.9f)
-    val refractionLayer = Color.LightGray.copy(alpha = 0.5f)
+
+    // Use the style's borderColor as the overlay/refraction layer; this is mapped from tokens.overlayTint
+    val refractionLayer = style.borderColor.copy(alpha = 0.5f)
 
     val colors = listOf(
         reflectionLayer,
@@ -172,7 +174,8 @@ private fun createSurfaceGlassGradient(
 ): Brush {
     val baseColor = style.backgroundColor.copy(alpha = style.backgroundOpacity)
 
-    val reflectionLayer = baseColor.copy(alpha = 0.4f)
+    // Use vibrancy tint (encoded in style.borderColor) as the reflective highlight layer
+    val reflectionLayer = style.borderColor.copy(alpha = 0.35f)
     val refractionLayer = baseColor.copy(alpha = 0.8f)
 
     val colors = listOf(
@@ -192,3 +195,16 @@ private fun createSurfaceGlassGradient(
         }
     }
 }
+
+
+@Composable
+fun krystalContainerStyleFor(
+    level: ElevationLevel,
+    tokens: KrystalTokens = LocalKrystalTokens.current,
+): KrystalStyle.Container = tokens.toContainerStyle(level)
+
+@Composable
+fun krystalSurfaceStyleFor(
+    level: ElevationLevel,
+    tokens: KrystalTokens = LocalKrystalTokens.current,
+): KrystalStyle.Surface = tokens.toSurfaceStyle(level)

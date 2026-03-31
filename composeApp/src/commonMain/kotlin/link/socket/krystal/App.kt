@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.requiredHeightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,6 +41,7 @@ fun App() {
                         scrollState = scrollState,
                         backgroundContent = { SimpleListContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },
+                        baseContainerStyle = krystalContainerStyleFor(ElevationLevel.L3),
                     )
                 }
 
@@ -51,18 +53,22 @@ fun App() {
                         scrollState = scrollState,
                         backgroundContent = { MusicLightContent(scrollState) },
                         foregroundContent = { AppForegroundContent() },
+                        baseContainerStyle = krystalContainerStyleFor(ElevationLevel.L4),
                     )
                 }
 
                 DemoTab.MUSIC_DARK -> {
                     val scrollState = rememberScrollState()
 
-                    KrystalContainer(
-                        modifier = Modifier.fillMaxHeight(0.9f),
-                        scrollState = scrollState,
-                        backgroundContent = { MusicDarkContent(scrollState) },
-                        foregroundContent = { AppForegroundContent() },
-                    )
+                    CompositionLocalProvider(LocalKrystalTokens provides KrystalTokens.DefaultDark) {
+                        KrystalContainer(
+                            modifier = Modifier.fillMaxHeight(0.9f),
+                            scrollState = scrollState,
+                            backgroundContent = { MusicDarkContent(scrollState) },
+                            foregroundContent = { AppForegroundContent() },
+                            baseContainerStyle = krystalContainerStyleFor(ElevationLevel.L4),
+                        )
+                    }
                 }
 
                 DemoTab.GLASS_GALLERY -> {

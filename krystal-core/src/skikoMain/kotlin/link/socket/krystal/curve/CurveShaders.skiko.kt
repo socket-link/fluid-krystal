@@ -54,11 +54,34 @@ private const val COMPOSITE_SHADER_SKSL = """
   uniform shader curve;
   uniform shader noise;
 
+  uniform vec4 glassTint;
+  uniform vec4 overlayTint;
+  uniform vec4 vibrancyTint;
+  uniform float noiseFactor;
+  uniform float saturation;
+
   half4 main(vec2 coord) {
     half4 c = curve.eval(coord);
     half4 n = noise.eval(coord);
+
+    // Apply saturation adjustment
+    float luma = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+    vec3 saturated = mix(vec3(luma), c.rgb, saturation);
+
+    // Layer glass tint
+    vec3 tinted = mix(saturated, glassTint.rgb, glassTint.a);
+
+    // Layer overlay tint
+    tinted = mix(tinted, overlayTint.rgb, overlayTint.a);
+
+    // Apply vibrancy tint (additive blend)
+    tinted += vibrancyTint.rgb * vibrancyTint.a;
+
+    // Apply noise texture
     float noiseLuma = dot(n.rgb, vec3(0.2126, 0.7152, 0.0722));
-    float overlay = saturate(noiseLuma * 1.0);
-    return mix(c, half4(1.0), overlay);
+    float noiseOverlay = saturate(noiseLuma * noiseFactor);
+    tinted = mix(tinted, vec3(1.0), noiseOverlay);
+
+    return half4(tinted, c.a);
   }
 """
