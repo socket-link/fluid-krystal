@@ -92,7 +92,7 @@ fun GlassTintDemo() {
             )
 
             GlassSurface(
-                style = GlassStyle.socketTab(GlassTint.ElectricPurple),
+                style = GlassStyle.floatingBar(GlassTint.ElectricPurple),
                 modifier = Modifier.fillMaxWidth().height(56.dp),
             ) {
                 Row(
