@@ -60,7 +60,6 @@ private fun createGlassEffectView(style: GlassStyle): UIView {
     val blurEffect = createBlurEffect()
     val effectView = UIVisualEffectView(effect = blurEffect).apply {
         setAutoresizingMask(UIViewAutoresizingFlexibleWidth or UIViewAutoresizingFlexibleHeight)
-        clipsToBounds = true
     }
 
     applyTint(effectView, style)
@@ -76,13 +75,11 @@ private fun updateGlassEffectView(view: UIView, style: GlassStyle) {
 }
 
 private fun createBlurEffect(): UIBlurEffect {
-    // On iOS 26+, UIBlurEffectStyleSystemGlass would be the Liquid Glass
-    // material. Since that enum value may not be available in the current
-    // Kotlin/Native UIKit bindings, we use systemThinMaterial as the
-    // base and rely on tint color to achieve the glass appearance.
-    // When Kotlin/Native bindings are updated for iOS 26, swap to the
-    // glass-specific style here.
-    return UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemThinMaterial)
+    return if (isIos26OrLater) {
+        UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemGlass)
+    } else {
+        UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemThinMaterial)
+    }
 }
 
 private fun applyTint(effectView: UIVisualEffectView, style: GlassStyle) {
@@ -95,9 +92,9 @@ private fun applyTint(effectView: UIVisualEffectView, style: GlassStyle) {
 }
 
 private fun applyCornerRadius(effectView: UIVisualEffectView, style: GlassStyle) {
-    val radius = style.cornerRadius.value.toDouble()
-    effectView.layer.cornerRadius = radius
-    effectView.clipsToBounds = true
+    // Corner radius is handled by the Compose Box clip in GlassSurface.
+    // Applying CALayer.cornerRadius here as well causes sub-pixel seams
+    // because Skia and Core Animation rasterize the rounded rect independently.
 }
 
 internal fun GlassTint.toUIColor(): UIColor = when (this) {

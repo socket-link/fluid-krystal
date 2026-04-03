@@ -36,14 +36,15 @@ data class GlassStyle(
             elevation = elevation,
         )
 
-        fun socketTab(
+        fun floatingBar(
             tint: GlassTint = GlassTint.Clear,
+            cornerRadius: Dp = 28.dp,
         ) = GlassStyle(
             tint = tint,
             blurRadius = 32.dp,
             opacity = 0.15f,
             elevation = GlassElevation.Raised,
-            cornerRadius = 0.dp,
+            cornerRadius = cornerRadius,
         )
     }
 }
