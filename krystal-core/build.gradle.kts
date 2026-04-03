@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
-    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.32.0"
     signing
 }
 
@@ -107,52 +107,35 @@ android {
     }
 }
 
-publishing {
-    publications.withType<MavenPublication> {
-        pom {
-            name.set("Fluid Krystal")
-            description.set("Kotlin Multiplatform glass-effect rendering library")
-            url.set("https://github.com/socket-link/fluid-krystal")
-            licenses {
-                license {
-                    name.set("The Apache License, Version 2.0")
-                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                }
-            }
-            developers {
-                developer {
-                    id.set("socket")
-                    name.set("Socket")
-                    url.set("https://socket.link")
-                }
-            }
-            scm {
-                url.set("https://github.com/socket-link/fluid-krystal")
-                connection.set("scm:git:git://github.com/socket-link/fluid-krystal.git")
-                developerConnection.set("scm:git:ssh://github.com/socket-link/fluid-krystal.git")
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "sonatype"
-            val releasesUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            val snapshotsUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-            url = if (version.toString().endsWith("SNAPSHOT")) snapshotsUrl else releasesUrl
-            credentials {
-                username = findProperty("ossrhUsername") as String? ?: ""
-                password = findProperty("ossrhPassword") as String? ?: ""
-            }
-        }
-    }
+signing {
+    useGpgCmd()
 }
 
-signing {
-    val signingKey = findProperty("signing.key") as String?
-    val signingPassword = findProperty("signing.password") as String?
-    if (signingKey != null && signingPassword != null) {
-        useInMemoryPgpKeys(signingKey, signingPassword)
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    pom {
+        name.set("Fluid Krystal")
+        description.set("Kotlin Multiplatform glass-effect rendering library")
+        url.set("https://github.com/socket-link/fluid-krystal")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                id.set("socket")
+                name.set("Socket")
+                url.set("https://socket.link")
+            }
+        }
+        scm {
+            url.set("https://github.com/socket-link/fluid-krystal")
+            connection.set("scm:git:git://github.com/socket-link/fluid-krystal.git")
+            developerConnection.set("scm:git:ssh://github.com/socket-link/fluid-krystal.git")
+        }
     }
-    sign(publishing.publications)
 }
