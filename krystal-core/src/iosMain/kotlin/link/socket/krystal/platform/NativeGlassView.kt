@@ -6,13 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.cValue
-import kotlinx.cinterop.useContents
 import link.socket.krystal.api.GlassStyle
 import link.socket.krystal.api.GlassTint
-import platform.CoreGraphics.CGRectZero
-import platform.Foundation.NSOperatingSystemVersion
-import platform.Foundation.NSProcessInfo
 import platform.UIKit.UIBlurEffect
 import platform.UIKit.UIBlurEffectStyle
 import platform.UIKit.UIColor
@@ -30,15 +25,6 @@ import platform.UIKit.UIVisualEffectView
 // Architecture note: this is the key Apple pass-through — we intentionally
 // do NOT use the KMP Skia renderer on Apple platforms. Native glass is
 // always better than emulated glass.
-
-internal val isIos26OrLater: Boolean by lazy {
-    val version = cValue<NSOperatingSystemVersion> {
-        majorVersion = 26
-        minorVersion = 0
-        patchVersion = 0
-    }
-    NSProcessInfo.processInfo.isOperatingSystemAtLeastVersion(version)
-}
 
 @Composable
 internal fun NativeGlassEffectView(
@@ -75,11 +61,12 @@ private fun updateGlassEffectView(view: UIView, style: GlassStyle) {
 }
 
 private fun createBlurEffect(): UIBlurEffect {
-    return if (isIos26OrLater) {
-        UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemGlass)
-    } else {
-        UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemThinMaterial)
-    }
+    // UIBlurEffectStyleSystemGlass is not yet available in the Kotlin/Native UIKit bindings
+    // (iOS 26 SDK). Until the headers ship, use SystemUltraThinMaterial on all versions,
+    // which is the closest stock blur to Liquid Glass.
+    // TODO: switch the isIos26OrLater branch to UIBlurEffectStyleSystemGlass once
+    //  Kotlin/Native ships iOS 26 SDK interop headers.
+    return UIBlurEffect.effectWithStyle(UIBlurEffectStyle.UIBlurEffectStyleSystemUltraThinMaterial)
 }
 
 private fun applyTint(effectView: UIVisualEffectView, style: GlassStyle) {
