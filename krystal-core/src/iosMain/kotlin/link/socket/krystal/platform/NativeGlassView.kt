@@ -8,6 +8,7 @@ import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.ExperimentalForeignApi
 import link.socket.krystal.api.GlassStyle
 import link.socket.krystal.api.GlassTint
+import platform.QuartzCore.kCACornerCurveCircular
 import platform.UIKit.UIBlurEffect
 import platform.UIKit.UIBlurEffectStyle
 import platform.UIKit.UIColor
@@ -79,9 +80,9 @@ private fun applyTint(effectView: UIVisualEffectView, style: GlassStyle) {
 }
 
 private fun applyCornerRadius(effectView: UIVisualEffectView, style: GlassStyle) {
-    // Corner radius is handled by the Compose Box clip in GlassSurface.
-    // Applying CALayer.cornerRadius here as well causes sub-pixel seams
-    // because Skia and Core Animation rasterize the rounded rect independently.
+    effectView.layer.cornerRadius = style.cornerRadius.value.toDouble()
+    effectView.clipsToBounds = true
+    effectView.layer.cornerCurve = kCACornerCurveCircular
 }
 
 internal fun GlassTint.toUIColor(): UIColor = when (this) {
